@@ -30,7 +30,7 @@ require_once 'connect.php'; // File này nằm ở ngoài cùng (thư mục gố
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top shadow">
     <div class="container">
-        <a class="navbar-brand fw-bold" href="trang_chu.php"><i class="bi bi-tv"></i> TIVI STORE</a>
+        <a class="navbar-brand fw-bold" href="trang_chu.php"><i class="bi bi-tv"></i> N&U</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -57,6 +57,7 @@ require_once 'connect.php'; // File này nằm ở ngoài cùng (thư mục gố
                     </span>
                 </a>
                 <a href="login.php" class="btn btn-outline-light"><i class="bi bi-person-circle"></i> Admin</a>
+                <a href="dang_ky.php" class="btn btn-outline-light me-2"><i class="bi bi-person-plus"></i> Đăng ký</a>
             </div>
         </div>
     </div>
@@ -124,7 +125,7 @@ require_once 'connect.php'; // File này nằm ở ngoài cùng (thư mục gố
 
 <footer class="bg-dark text-white text-center py-4 mt-5">
     <div class="container">
-        <p class="mb-0">© 2026 - Cửa Hàng Tivi Hiện Đại.</p>
+        <p class="mb-0">© 2026 - Cửa Hàng Tivi Nghi và Uy.</p>
         <p class="text-muted small">Chất lượng tạo nên thương hiệu</p>
     </div>
 </footer>
