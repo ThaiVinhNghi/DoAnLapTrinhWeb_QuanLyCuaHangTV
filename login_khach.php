@@ -2,13 +2,20 @@
 session_start();
 require_once 'connect.php';
 
-// Nếu khách đã đăng nhập rồi thì đẩy về trang chủ hoặc giỏ hàng
+// Nếu khách đã đăng nhập rồi thì đẩy về thanh toán
 if (isset($_SESSION['khach_hang_id'])) {
-    header("Location: trang_chu.php");
+    header("Location: thanh_toan.php");
     exit();
 }
 
 $thongBao = '';
+$loaiThongBao = 'danger';
+
+// Nếu vừa đăng ký thành công từ dang_ky.php chuyển sang
+if (isset($_GET['dangky']) && $_GET['dangky'] == 'thanhcong') {
+    $thongBao = "Đăng ký thành công! Vui lòng đăng nhập.";
+    $loaiThongBao = "success";
+}
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $tenDangNhap = trim($_POST['TenDangNhap']);
@@ -16,6 +23,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     if (empty($tenDangNhap) || empty($matKhau)) {
         $thongBao = "Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu!";
+        $loaiThongBao = "danger";
     } else {
         // Kiểm tra trong bảng khachhang
         $sql = "SELECT ID, HoVaTen, MatKhau FROM khachhang WHERE TenDangNhap = ?";
@@ -25,21 +33,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $result = $stmt->get_result();
 
         if ($row = $result->fetch_assoc()) {
-            // So sánh mật khẩu (Ở đây đang dùng mật khẩu thường, nếu bạn có mã hóa MD5 hay Password Hash thì cần sửa lại chỗ này)
             if ($matKhau === $row['MatKhau']) {
                 // Đăng nhập thành công, lưu thông tin vào Session
                 $_SESSION['khach_hang_id'] = $row['ID'];
                 $_SESSION['khach_hang_ten'] = $row['HoVaTen'];
-                
-                // Chuyển hướng về giỏ hàng để khách tiếp tục thanh toán
+
+                // Chuyển hướng về thanh toán
                 header("Location: thanh_toan.php");
                 exit();
             } else {
                 $thongBao = "Mật khẩu không chính xác!";
+                $loaiThongBao = "danger";
             }
         } else {
             $thongBao = "Tài khoản không tồn tại!";
+            $loaiThongBao = "danger";
         }
+
         $stmt->close();
     }
 }
@@ -63,9 +73,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <h4 class="mb-0"><i class="bi bi-person-circle"></i> Đăng Nhập Khách Hàng</h4>
                 </div>
                 <div class="card-body p-4">
-                    
+
                     <?php if ($thongBao != ''): ?>
-                        <div class="alert alert-danger text-center">
+                        <div class="alert alert-<?php echo $loaiThongBao; ?> text-center">
                             <?php echo $thongBao; ?>
                         </div>
                     <?php endif; ?>
@@ -86,7 +96,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         <p class="mb-1">Chưa có tài khoản?</p>
                         <a href="dang_ky.php" class="btn btn-outline-secondary w-100">Đăng ký ngay</a>
                     </div>
-                    
+
                     <div class="text-center mt-3">
                         <a href="trang_chu.php" class="text-decoration-none text-muted"><i class="bi bi-arrow-left"></i> Về trang chủ</a>
                     </div>

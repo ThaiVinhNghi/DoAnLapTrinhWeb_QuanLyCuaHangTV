@@ -41,18 +41,36 @@ $result = $conn->query($sql);
                                 <tr>
                                     <td class="fw-bold">#PN-<?php echo $row['ID']; ?></td>
                                     <td><?php echo date("d/m/Y H:i", strtotime($row['NgayNhap'])); ?></td>
-                                    <td><span class="badge bg-info text-dark"><?php echo $row['TenNhaCungCap']; ?></span></td>
-                                    <td><?php echo $row['HoVaTen']; ?></td>
-                                    <td class="text-danger fw-bold"><?php echo number_format($row['TongTien'], 0, ',', '.'); ?> đ</td>
                                     <td>
-                                        <a href="nhap_hang_chi_tiet.php?id=<?php echo $row['ID']; ?>" class="btn btn-sm btn-outline-primary">
+                                        <span class="badge bg-info text-dark">
+                                            <?php echo $row['TenNhaCungCap']; ?>
+                                        </span>
+                                    </td>
+                                    <td><?php echo $row['HoVaTen']; ?></td>
+                                    <td class="text-danger fw-bold">
+                                        <?php echo number_format($row['TongTien'], 0, ',', '.'); ?> đ
+                                    </td>
+                                    <td>
+                                        <a href="nhap_hang_chi_tiet.php?id=<?php echo $row['ID']; ?>" class="btn btn-sm btn-outline-primary mb-1">
                                             <i class="bi bi-eye"></i> Xem chi tiết
+                                        </a>
+
+                                        <a href="nhap_hang_sua.php?id=<?php echo $row['ID']; ?>" class="btn btn-sm btn-outline-warning mb-1">
+                                            <i class="bi bi-pencil-square"></i> Sửa
+                                        </a>
+
+                                        <a href="nhap_hang_xoa.php?id=<?php echo $row['ID']; ?>"
+                                           class="btn btn-sm btn-outline-danger mb-1"
+                                           onclick="return confirm('Bạn có chắc muốn xóa phiếu nhập này không?');">
+                                            <i class="bi bi-trash"></i> Xóa
                                         </a>
                                     </td>
                                 </tr>
                             <?php endwhile; ?>
                         <?php else: ?>
-                            <tr><td colspan="6" class="py-4 text-muted">Chưa có giao dịch nhập hàng nào.</td></tr>
+                            <tr>
+                                <td colspan="6" class="py-4 text-muted">Chưa có giao dịch nhập hàng nào.</td>
+                            </tr>
                         <?php endif; ?>
                     </tbody>
                 </table>

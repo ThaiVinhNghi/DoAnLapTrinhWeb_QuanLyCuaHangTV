@@ -20,7 +20,7 @@
             </a>
             
             <span class="text-white me-3">
-                Xin chào, <strong><?php echo isset($_SESSION['HoVaTen']) ? $_SESSION['HoVaTen'] : 'Admin'; ?></strong>!
+                Xin chào, <strong><?php echo isset($_SESSION['ho_ten']) ? htmlspecialchars($_SESSION['ho_ten']) : 'Admin'; ?></strong>!
             </span>
             <a href="logout.php" class="btn btn-danger btn-sm">Đăng xuất</a>
         </div>
