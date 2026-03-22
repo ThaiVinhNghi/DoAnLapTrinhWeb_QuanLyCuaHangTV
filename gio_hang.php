@@ -57,8 +57,8 @@ require_once 'connect.php';
                             $tongTien = 0;
                             // Vòng lặp lấy từng ID sản phẩm và Số lượng trong Session
                             foreach ($_SESSION['gio_hang'] as $id_sp => $so_luong) {
-                                // Truy vấn CSDL để lấy tên và giá của ID này
-                                $sql = "SELECT TenSanPham, DonGia, HinhAnh FROM SanPham WHERE ID = ?";
+                                // Bổ sung lấy cột PhanTramGiam
+                                $sql = "SELECT TenSanPham, DonGia, HinhAnh, PhanTramGiam FROM SanPham WHERE ID = ?";
                                 $stmt = $conn->prepare($sql);
                                 $stmt->bind_param("i", $id_sp);
                                 $stmt->execute();
@@ -66,13 +66,29 @@ require_once 'connect.php';
                                 
                                 if ($row = $result->fetch_assoc()) {
                                     $hinhAnh = !empty($row['HinhAnh']) ? "uploads/".$row['HinhAnh'] : "uploads/no-image.jpg";
-                                    $thanhTien = $row['DonGia'] * $so_luong;
+                                    
+                                    // XỬ LÝ TÍNH TOÁN GIÁ KHUYẾN MÃI
+                                    $giaGoc = $row['DonGia'];
+                                    $phanTram = isset($row['PhanTramGiam']) ? $row['PhanTramGiam'] : 0;
+                                    $giaBanThucTe = $giaGoc - ($giaGoc * $phanTram / 100);
+                                    
+                                    $thanhTien = $giaBanThucTe * $so_luong;
                                     $tongTien += $thanhTien;
+                                    
+                                    // Xử lý hiển thị giao diện Giá
+                                    if ($phanTram > 0) {
+                                        $hienThiGia = '<span class="text-muted text-decoration-line-through small">'.number_format($giaGoc, 0, ',', '.').' đ</span><br>
+                                                       <span class="text-danger fw-bold">'.number_format($giaBanThucTe, 0, ',', '.').' đ</span>';
+                                        $hienThiTen = $row['TenSanPham'] . ' <span class="badge bg-danger ms-2">-'.$phanTram.'%</span>';
+                                    } else {
+                                        $hienThiGia = '<span class="text-danger fw-bold">'.number_format($giaGoc, 0, ',', '.').' đ</span>';
+                                        $hienThiTen = $row['TenSanPham'];
+                                    }
                                     
                                     echo '<tr>
                                             <td><img src="'.$hinhAnh.'" width="60" class="rounded border"></td>
-                                            <td class="fw-bold">'.$row['TenSanPham'].'</td>
-                                            <td class="text-danger">'.number_format($row['DonGia'], 0, ',', '.').' đ</td>
+                                            <td class="fw-bold">'.$hienThiTen.'</td>
+                                            <td>'.$hienThiGia.'</td>
                                             <td>
                                                 <input type="number" class="form-control text-center" value="'.$so_luong.'" readonly>
                                             </td>

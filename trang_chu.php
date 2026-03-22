@@ -11,21 +11,34 @@ require_once 'connect.php';
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <style>
-        body { background-color: #f8f9fa; }
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: #f8f9fa;
+        }
+
         .product-card {
             transition: transform 0.3s, box-shadow 0.3s;
             border-radius: 15px;
             overflow: hidden;
         }
+
         .product-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 20px rgba(0,0,0,0.15);
         }
+
         .product-img {
             height: 200px;
             object-fit: contain;
             width: 100%;
             background-color: #fff;
+        }
+
+        #lien-he, #khuyen-mai {
+            scroll-margin-top: 80px;
         }
     </style>
 </head>
@@ -41,8 +54,8 @@ require_once 'connect.php';
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto">
                 <li class="nav-item"><a class="nav-link active" href="trang_chu.php">Trang Chủ</a></li>
-                <li class="nav-item"><a class="nav-link" href="#">Khuyến Mãi</a></li>
-                <li class="nav-item"><a class="nav-link" href="#">Liên Hệ</a></li>
+                <li class="nav-item"><a class="nav-link" href="trang_chu.php#khuyen-mai">Khuyến Mãi</a></li>
+                <li class="nav-item"><a class="nav-link" href="trang_chu.php#lien-he">Liên Hệ</a></li>
             </ul>
 
             <form class="d-flex me-3" action="tim_kiem.php" method="GET">
@@ -95,7 +108,90 @@ require_once 'connect.php';
     </div>
 </div>
 
-<div class="container mb-5">
+<div class="container mb-5 mt-5" id="khuyen-mai">
+    <div class="d-flex align-items-center mb-4 border-bottom border-danger pb-2">
+        <h3 class="text-danger text-uppercase fw-bold mb-0">
+            <i class="bi bi-fire"></i> Ưu Đãi Khủng
+        </h3>
+    </div>
+
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+        <?php
+        $sql_km = "SELECT sp.*, hsx.TenHangSanXuat
+                   FROM SanPham sp
+                   LEFT JOIN HangSanXuat hsx ON sp.HangSanXuatID = hsx.ID
+                   WHERE sp.SoLuong > 0 AND sp.PhanTramGiam > 0
+                   ORDER BY sp.ID ASC
+                   LIMIT 8";
+        $result_km = $conn->query($sql_km);
+
+        $dsKhuyenMaiIDs = [];
+
+        if ($result_km && $result_km->num_rows > 0) {
+            while ($row = $result_km->fetch_assoc()) {
+                $dsKhuyenMaiIDs[] = (int)$row['ID'];
+
+                $hinhAnh = !empty($row['HinhAnh']) ? "uploads/" . $row['HinhAnh'] : "uploads/no-image.jpg";
+                $tenSP = htmlspecialchars($row['TenSanPham']);
+                $tenHang = htmlspecialchars($row['TenHangSanXuat'] ?? 'Không rõ');
+                $idSP = (int)$row['ID'];
+
+                $phanTram = isset($row['PhanTramGiam']) ? (int)$row['PhanTramGiam'] : 0;
+                $giaGoc = (float)$row['DonGia'];
+                $giaKhuyenMai = $giaGoc - ($giaGoc * $phanTram / 100);
+
+                $giaGoc_format = number_format($giaGoc, 0, ',', '.');
+                $giaKhuyenMai_format = number_format($giaKhuyenMai, 0, ',', '.');
+                ?>
+                <div class="col">
+                    <div class="card h-100 product-card border-danger shadow position-relative" style="border-width: 2px;">
+                        <span class="badge bg-danger position-absolute px-2 py-2 fs-6 shadow-sm" style="top: -10px; left: -10px; z-index: 10;">
+                            <i class="bi bi-lightning-fill"></i> -<?php echo $phanTram; ?>%
+                        </span>
+
+                        <span class="badge bg-dark position-absolute" style="top: 10px; right: 10px; z-index: 10;">
+                            <?php echo $tenHang; ?>
+                        </span>
+
+                        <a href="chi_tiet_san_pham.php?id=<?php echo $idSP; ?>">
+                            <img src="<?php echo $hinhAnh; ?>" class="card-img-top product-img p-3" alt="<?php echo $tenSP; ?>">
+                        </a>
+
+                        <div class="card-body d-flex flex-column text-center bg-light">
+                            <h6 class="card-title" style="height: 48px; overflow: hidden;">
+                                <a href="chi_tiet_san_pham.php?id=<?php echo $idSP; ?>" class="text-decoration-none text-dark fw-bold">
+                                    <?php echo $tenSP; ?>
+                                </a>
+                            </h6>
+
+                            <div class="mt-auto mb-3">
+                                <span class="text-muted text-decoration-line-through small d-block">
+                                    <?php echo $giaGoc_format; ?> đ
+                                </span>
+                                <h5 class="card-text text-danger fw-bold mb-0">
+                                    <?php echo $giaKhuyenMai_format; ?> đ
+                                </h5>
+                            </div>
+
+                            <form action="them_gio_hang.php" method="POST">
+                                <input type="hidden" name="id_sp" value="<?php echo $idSP; ?>">
+                                <button type="submit" class="btn btn-danger w-100 rounded-pill fw-bold">
+                                    <i class="bi bi-cart-plus"></i> Săn Ngay
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <?php
+            }
+        } else {
+            echo '<div class="col-12"><p class="text-center">Hiện tại chưa có chương trình khuyến mãi.</p></div>';
+        }
+        ?>
+    </div>
+</div>
+
+<div class="container mb-5 mt-5">
     <h3 class="border-bottom pb-2 mb-4 text-primary text-uppercase fw-bold">Tivi Nổi Bật Nhất</h3>
 
     <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
@@ -109,41 +205,100 @@ require_once 'connect.php';
 
         if ($result && $result->num_rows > 0) {
             while ($row = $result->fetch_assoc()) {
-                $hinhAnh = !empty($row['HinhAnh']) ? "uploads/" . $row['HinhAnh'] : "uploads/no-image.jpg";
-                $tenSP = htmlspecialchars($row['TenSanPham']);
-                $giaBan = number_format($row['DonGia'], 0, ',', '.');
-                $tenHang = htmlspecialchars($row['TenHangSanXuat'] ?? 'Không rõ');
                 $idSP = (int)$row['ID'];
 
-                echo '
-                <div class="col">
-                    <div class="card h-100 product-card border-0 shadow-sm">
-                        <span class="badge bg-danger position-absolute" style="top: 10px; right: 10px; z-index: 10;">' . $tenHang . '</span>
+                if (in_array($idSP, $dsKhuyenMaiIDs)) {
+                    continue;
+                }
 
-                        <a href="chi_tiet_san_pham.php?id=' . $idSP . '">
-                            <img src="' . $hinhAnh . '" class="card-img-top product-img p-3" alt="' . $tenSP . '">
+                $hinhAnh = !empty($row['HinhAnh']) ? "uploads/" . $row['HinhAnh'] : "uploads/no-image.jpg";
+                $tenSP = htmlspecialchars($row['TenSanPham']);
+                $tenHang = htmlspecialchars($row['TenHangSanXuat'] ?? 'Không rõ');
+
+                $giaGoc = (float)$row['DonGia'];
+                $phanTram = isset($row['PhanTramGiam']) ? (int)$row['PhanTramGiam'] : 0;
+
+                if ($phanTram > 0) {
+                    $giaKhuyenMai = $giaGoc - ($giaGoc * $phanTram / 100);
+                    $giaHienThi = '
+                        <span class="text-muted text-decoration-line-through small d-block">' . number_format($giaGoc, 0, ',', '.') . ' đ</span>
+                        <h5 class="card-text text-danger fw-bold mt-1 mb-3">' . number_format($giaKhuyenMai, 0, ',', '.') . ' đ</h5>
+                    ';
+                    $badgeGiamGia = '<span class="badge bg-danger position-absolute" style="top: 10px; left: 10px; z-index: 10;">-' . $phanTram . '%</span>';
+                } else {
+                    $giaHienThi = '<h5 class="card-text text-danger fw-bold mt-auto mb-3">' . number_format($giaGoc, 0, ',', '.') . ' đ</h5>';
+                    $badgeGiamGia = '';
+                }
+                ?>
+                <div class="col">
+                    <div class="card h-100 product-card border-0 shadow-sm position-relative">
+                        <?php echo $badgeGiamGia; ?>
+
+                        <span class="badge bg-secondary position-absolute" style="top: 10px; right: 10px; z-index: 10;">
+                            <?php echo $tenHang; ?>
+                        </span>
+
+                        <a href="chi_tiet_san_pham.php?id=<?php echo $idSP; ?>">
+                            <img src="<?php echo $hinhAnh; ?>" class="card-img-top product-img p-3" alt="<?php echo $tenSP; ?>">
                         </a>
 
                         <div class="card-body d-flex flex-column text-center">
-                            <h6 class="card-title" style="height: 40px; overflow: hidden;">
-                                <a href="chi_tiet_san_pham.php?id=' . $idSP . '" class="text-decoration-none text-dark fw-bold">' . $tenSP . '</a>
+                            <h6 class="card-title" style="height: 48px; overflow: hidden;">
+                                <a href="chi_tiet_san_pham.php?id=<?php echo $idSP; ?>" class="text-decoration-none text-dark fw-bold">
+                                    <?php echo $tenSP; ?>
+                                </a>
                             </h6>
-                            <h5 class="card-text text-danger fw-bold mt-auto mb-3">' . $giaBan . ' đ</h5>
+
+                            <div class="mt-auto">
+                                <?php echo $giaHienThi; ?>
+                            </div>
 
                             <form action="them_gio_hang.php" method="POST">
-                                <input type="hidden" name="id_sp" value="' . $idSP . '">
+                                <input type="hidden" name="id_sp" value="<?php echo $idSP; ?>">
                                 <button type="submit" class="btn btn-primary w-100 rounded-pill">
                                     <i class="bi bi-cart-plus"></i> Thêm vào giỏ
                                 </button>
                             </form>
                         </div>
                     </div>
-                </div>';
+                </div>
+                <?php
             }
         } else {
             echo '<div class="col-12"><p class="text-center">Hiện tại chưa có sản phẩm nào.</p></div>';
         }
         ?>
+    </div>
+</div>
+
+<div class="container mb-5 mt-5" id="lien-he">
+    <h3 class="border-bottom pb-2 mb-4 text-primary text-uppercase fw-bold">Liên Hệ Với Chúng Tôi</h3>
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-geo-alt-fill text-danger"></i> Cửa Hàng Tivi N&U</h5>
+                    <p><strong>Địa chỉ:</strong> 54/98 Đường Trần Quang Khải, Phường Mỹ Thới, TP. Long Xuyên</p>
+                    <p><strong>Điện thoại:</strong> <a href="tel:0123456789" class="text-decoration-none fw-bold text-primary">0123.456.789</a></p>
+                    <p><strong>Email:</strong> <a href="mailto:hotro@tivinu.com" class="text-decoration-none">hotro@tivinu.com</a></p>
+                    <p><strong>Giờ mở cửa:</strong> 8:00 - 21:00 (Tất cả các ngày trong tuần)</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100 bg-primary text-white">
+                <div class="card-body text-center d-flex flex-column justify-content-center">
+                    <h5 class="fw-bold mb-3">Hỗ trợ khách hàng 24/7</h5>
+                    <p>Quý khách cần tư vấn chọn mua Tivi hoặc hỗ trợ bảo hành? Đừng ngần ngại gọi ngay cho chúng tôi để được phục vụ và giải đáp nhanh nhất!</p>
+                    <div>
+                        <a href="tel:0123456789" class="btn btn-light btn-lg fw-bold mt-2 text-primary rounded-pill px-4 shadow-sm">
+                            <i class="bi bi-telephone-fill"></i> Gọi Ngay
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
