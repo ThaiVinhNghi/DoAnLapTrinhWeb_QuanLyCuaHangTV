@@ -21,5 +21,11 @@
         <a href="nhan_vien.php" class="list-group-item list-group-item-action text-success">
             <i class="bi bi-person-badge"></i> Quản lý Nhân viên
         </a>
+        <a href="bao_hanh.php" class="list-group-item list-group-item-action">
+    <i class="bi bi-shield-check me-2"></i> Quản lý Bảo hành
+</a>
+<a href="tra_gop.php" class="list-group-item list-group-item-action">
+    <i class="bi bi-credit-card-2-front me-2"></i> Quản lý Trả góp
+</a>
     </div>
 </div>

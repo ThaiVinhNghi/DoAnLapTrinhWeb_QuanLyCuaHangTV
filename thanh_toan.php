@@ -16,87 +16,11 @@ if (!isset($_SESSION['khach_hang_id'])) {
 
 $thongBao = '';
 $datHangThanhCong = false;
-$tongTienGioHang = 0; // Khởi tạo biến tổng tiền ở đầu
+$tongTienGioHang = 0;
 
-// Xử lý khi khách bấm đặt hàng
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $khachHangID = $_SESSION['khach_hang_id'];
-    $ngayLap = date('Y-m-d H:i:s');
-    $ghiChu = isset($_POST['GhiChuHoaDon']) ? trim($_POST['GhiChuHoaDon']) : '';
-    $nhanVienID = null;
-
-    $sql_hoadon = "INSERT INTO hoadon (NhanVienID, KhachHangID, NgayLap, GhiChuHoaDon) VALUES (?, ?, ?, ?)";
-    $stmt_hd = $conn->prepare($sql_hoadon);
-    $stmt_hd->bind_param("iiss", $nhanVienID, $khachHangID, $ngayLap, $ghiChu);
-
-    if ($stmt_hd->execute()) {
-        $id_hoadon = $conn->insert_id;
-        $loiChiTiet = false;
-
-        foreach ($_SESSION['gio_hang'] as $id_sp => $so_luong) {
-            // Lấy thêm PhanTramGiam
-            $sql_sp = "SELECT DonGia, SoLuong, PhanTramGiam FROM sanpham WHERE ID = ?";
-            $stmt_sp = $conn->prepare($sql_sp);
-            $stmt_sp->bind_param("i", $id_sp);
-            $stmt_sp->execute();
-            $res_sp = $stmt_sp->get_result();
-
-            if ($row_sp = $res_sp->fetch_assoc()) {
-                $giaGoc = $row_sp['DonGia'];
-                $soLuongTon = $row_sp['SoLuong'];
-                $phanTram = isset($row_sp['PhanTramGiam']) ? $row_sp['PhanTramGiam'] : 0;
-                
-                // TÍNH TOÁN GIÁ THỰC TẾ LÚC BÁN
-                $donGiaBanThucTe = $giaGoc - ($giaGoc * $phanTram / 100);
-
-                if ($so_luong > $soLuongTon) {
-                    $loiChiTiet = true;
-                    $thongBao = "Sản phẩm ID $id_sp không đủ số lượng trong kho.";
-                    break;
-                }
-
-                // LƯU VÀO CHI TIẾT HÓA ĐƠN LÀ GIÁ ĐÃ GIẢM
-                $sql_ct = "INSERT INTO hoadon_chitiet (HoaDonID, SanPhamID, SoLuongBan, DonGiaBan)
-                           VALUES (?, ?, ?, ?)";
-                $stmt_ct = $conn->prepare($sql_ct);
-                $stmt_ct->bind_param("iiid", $id_hoadon, $id_sp, $so_luong, $donGiaBanThucTe);
-
-                if (!$stmt_ct->execute()) {
-                    $loiChiTiet = true;
-                    $thongBao = "Có lỗi khi lưu chi tiết hóa đơn.";
-                    break;
-                }
-
-                $sql_update_sp = "UPDATE sanpham SET SoLuong = SoLuong - ? WHERE ID = ?";
-                $stmt_update = $conn->prepare($sql_update_sp);
-                $stmt_update->bind_param("ii", $so_luong, $id_sp);
-
-                if (!$stmt_update->execute()) {
-                    $loiChiTiet = true;
-                    $thongBao = "Có lỗi khi cập nhật số lượng sản phẩm.";
-                    break;
-                }
-            } else {
-                $loiChiTiet = true;
-                $thongBao = "Có sản phẩm không tồn tại trong hệ thống.";
-                break;
-            }
-        }
-
-        if (!$loiChiTiet) {
-            unset($_SESSION['gio_hang']);
-            $thongBao = "Đặt hàng thành công! Mã đơn hàng của bạn là: <strong class='text-danger fs-4'>#HD{$id_hoadon}</strong>";
-            $datHangThanhCong = true;
-        }
-    } else {
-        $thongBao = "Lỗi khi tạo hóa đơn: " . $conn->error;
-    }
-}
-
-// TÍNH TỔNG TIỀN HIỂN THỊ (Giao diện) nếu chưa đặt hàng thành công
-if (isset($_SESSION['gio_hang']) && !$datHangThanhCong) {
+// TÍNH TỔNG TIỀN HIỂN THỊ
+if (isset($_SESSION['gio_hang'])) {
     foreach ($_SESSION['gio_hang'] as $id_sp => $so_luong) {
-        // Lấy thêm PhanTramGiam
         $sql_gia = "SELECT DonGia, PhanTramGiam FROM sanpham WHERE ID = ?";
         $stmt_gia = $conn->prepare($sql_gia);
         $stmt_gia->bind_param("i", $id_sp);
@@ -104,13 +28,180 @@ if (isset($_SESSION['gio_hang']) && !$datHangThanhCong) {
         $res_gia = $stmt_gia->get_result();
 
         if ($row = $res_gia->fetch_assoc()) {
-            $giaGoc = $row['DonGia'];
-            $phanTram = isset($row['PhanTramGiam']) ? $row['PhanTramGiam'] : 0;
-            
-            // TÍNH TOÁN LẠI GIÁ BÁN HIỂN THỊ TRÊN MÀN HÌNH
+            $giaGoc = (float)$row['DonGia'];
+            $phanTram = isset($row['PhanTramGiam']) ? (float)$row['PhanTramGiam'] : 0;
             $giaBanThucTe = $giaGoc - ($giaGoc * $phanTram / 100);
             $tongTienGioHang += ($giaBanThucTe * $so_luong);
         }
+    }
+}
+
+// Xử lý khi khách bấm đặt hàng
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $khachHangID = (int)$_SESSION['khach_hang_id'];
+    $ngayLap = date('Y-m-d H:i:s');
+    $ghiChu = isset($_POST['GhiChuHoaDon']) ? trim($_POST['GhiChuHoaDon']) : '';
+    $hinhThucThanhToan = isset($_POST['HinhThucThanhToan']) ? $_POST['HinhThucThanhToan'] : 'thanhtoanhet';
+
+    $conn->begin_transaction();
+
+    try {
+        // =========================
+        // 1. THANH TOÁN HẾT
+        // =========================
+        if ($hinhThucThanhToan == 'thanhtoanhet') {
+            $nhanVienID = null;
+
+            $sql_hoadon = "INSERT INTO hoadon (NhanVienID, KhachHangID, NgayLap, GhiChuHoaDon) VALUES (?, ?, ?, ?)";
+            $stmt_hd = $conn->prepare($sql_hoadon);
+            $stmt_hd->bind_param("iiss", $nhanVienID, $khachHangID, $ngayLap, $ghiChu);
+            $stmt_hd->execute();
+
+            $id_hoadon = $conn->insert_id;
+
+            foreach ($_SESSION['gio_hang'] as $id_sp => $so_luong) {
+                $id_sp = (int)$id_sp;
+                $so_luong = (int)$so_luong;
+
+                $sql_sp = "SELECT DonGia, SoLuong, PhanTramGiam FROM sanpham WHERE ID = ?";
+                $stmt_sp = $conn->prepare($sql_sp);
+                $stmt_sp->bind_param("i", $id_sp);
+                $stmt_sp->execute();
+                $res_sp = $stmt_sp->get_result();
+
+                if (!$row_sp = $res_sp->fetch_assoc()) {
+                    throw new Exception("Có sản phẩm không tồn tại trong hệ thống.");
+                }
+
+                $giaGoc = (float)$row_sp['DonGia'];
+                $soLuongTon = (int)$row_sp['SoLuong'];
+                $phanTram = isset($row_sp['PhanTramGiam']) ? (float)$row_sp['PhanTramGiam'] : 0;
+                $donGiaBanThucTe = $giaGoc - ($giaGoc * $phanTram / 100);
+
+                if ($so_luong > $soLuongTon) {
+                    throw new Exception("Sản phẩm ID $id_sp không đủ số lượng trong kho.");
+                }
+
+                $sql_ct = "INSERT INTO hoadon_chitiet (HoaDonID, SanPhamID, SoLuongBan, DonGiaBan)
+                           VALUES (?, ?, ?, ?)";
+                $stmt_ct = $conn->prepare($sql_ct);
+                $stmt_ct->bind_param("iiid", $id_hoadon, $id_sp, $so_luong, $donGiaBanThucTe);
+                $stmt_ct->execute();
+
+                $sql_update_sp = "UPDATE sanpham SET SoLuong = SoLuong - ? WHERE ID = ?";
+                $stmt_update = $conn->prepare($sql_update_sp);
+                $stmt_update->bind_param("ii", $so_luong, $id_sp);
+                $stmt_update->execute();
+            }
+
+            $conn->commit();
+            unset($_SESSION['gio_hang']);
+            $thongBao = "Đặt hàng thành công! Mã đơn hàng của bạn là: <strong class='text-danger fs-4'>#HD{$id_hoadon}</strong>";
+            $datHangThanhCong = true;
+        }
+
+        // =========================
+        // 2. TRẢ GÓP
+        // =========================
+        elseif ($hinhThucThanhToan == 'tragop') {
+            $soTienTraTruoc = isset($_POST['SoTienTraTruoc']) ? (float)$_POST['SoTienTraTruoc'] : 0;
+            $soThangTraGop = isset($_POST['SoThangTraGop']) ? (int)$_POST['SoThangTraGop'] : 6;
+            $laiSuat = isset($_POST['LaiSuat']) ? (float)$_POST['LaiSuat'] : 1.5;
+
+            if ($soTienTraTruoc < 0) {
+                throw new Exception("Số tiền trả trước không hợp lệ.");
+            }
+
+            if (!in_array($soThangTraGop, [3, 6, 9, 12])) {
+                throw new Exception("Số tháng trả góp không hợp lệ.");
+            }
+
+            if ($soTienTraTruoc >= $tongTienGioHang) {
+                throw new Exception("Nếu trả trước bằng hoặc lớn hơn tổng tiền thì nên chọn thanh toán hết.");
+            }
+
+            $soTienConLai = $tongTienGioHang - $soTienTraTruoc;
+            $tongPhaiTra = $soTienConLai + ($soTienConLai * $laiSuat / 100 * $soThangTraGop);
+            $tienGopMoiThang = $tongPhaiTra / $soThangTraGop;
+            $soTienDaTra = 0;
+            $soLanNhacNho = 0;
+            $trangThai = 'Chờ duyệt';
+            $tinhTrangTra = 'Chờ duyệt';
+
+            $sql_tragop = "INSERT INTO tragop 
+                (KhachHangID, NgayDangKy, SoTienTraTruoc, SoThangTraGop, LaiSuat, TongTien, SoTienConLai, TongPhaiTra, TienGopMoiThang, SoTienDaTra, SoLanNhacNho, GhiChu, TrangThai, TinhTrangTra)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+            $stmt_tg = $conn->prepare($sql_tragop);
+            $stmt_tg->bind_param(
+                "isdidddddissss",
+                $khachHangID,
+                $ngayLap,
+                $soTienTraTruoc,
+                $soThangTraGop,
+                $laiSuat,
+                $tongTienGioHang,
+                $soTienConLai,
+                $tongPhaiTra,
+                $tienGopMoiThang,
+                $soTienDaTra,
+                $soLanNhacNho,
+                $ghiChu,
+                $trangThai,
+                $tinhTrangTra
+            );
+            $stmt_tg->execute();
+
+            $id_tragop = $conn->insert_id;
+
+            foreach ($_SESSION['gio_hang'] as $id_sp => $so_luong) {
+                $id_sp = (int)$id_sp;
+                $so_luong = (int)$so_luong;
+
+                $sql_sp = "SELECT DonGia, SoLuong, PhanTramGiam FROM sanpham WHERE ID = ?";
+                $stmt_sp = $conn->prepare($sql_sp);
+                $stmt_sp->bind_param("i", $id_sp);
+                $stmt_sp->execute();
+                $res_sp = $stmt_sp->get_result();
+
+                if (!$row_sp = $res_sp->fetch_assoc()) {
+                    throw new Exception("Có sản phẩm không tồn tại trong hệ thống.");
+                }
+
+                $giaGoc = (float)$row_sp['DonGia'];
+                $soLuongTon = (int)$row_sp['SoLuong'];
+                $phanTram = isset($row_sp['PhanTramGiam']) ? (float)$row_sp['PhanTramGiam'] : 0;
+                $donGiaBanThucTe = $giaGoc - ($giaGoc * $phanTram / 100);
+                $thanhTien = $donGiaBanThucTe * $so_luong;
+
+                if ($so_luong > $soLuongTon) {
+                    throw new Exception("Sản phẩm ID $id_sp không đủ số lượng trong kho.");
+                }
+
+                $sql_ct = "INSERT INTO tragop_chitiet (TraGopID, SanPhamID, SoLuong, DonGia, ThanhTien)
+                           VALUES (?, ?, ?, ?, ?)";
+                $stmt_ct = $conn->prepare($sql_ct);
+                $stmt_ct->bind_param("iiidd", $id_tragop, $id_sp, $so_luong, $donGiaBanThucTe, $thanhTien);
+                $stmt_ct->execute();
+
+                $sql_update_sp = "UPDATE sanpham SET SoLuong = SoLuong - ? WHERE ID = ?";
+                $stmt_update = $conn->prepare($sql_update_sp);
+                $stmt_update->bind_param("ii", $so_luong, $id_sp);
+                $stmt_update->execute();
+            }
+
+            $conn->commit();
+            unset($_SESSION['gio_hang']);
+            $thongBao = "Đăng ký mua trả góp thành công! Mã hồ sơ trả góp của bạn là: <strong class='text-danger fs-4'>#TG{$id_tragop}</strong>";
+            $datHangThanhCong = true;
+        }
+
+        else {
+            throw new Exception("Hình thức thanh toán không hợp lệ.");
+        }
+    } catch (Exception $e) {
+        $conn->rollback();
+        $thongBao = $e->getMessage();
     }
 }
 ?>
@@ -120,10 +211,17 @@ if (isset($_SESSION['gio_hang']) && !$datHangThanhCong) {
     <meta charset="UTF-8">
     <title>Thanh Toán - TIVI STORE</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script>
+        function toggleTraGopBox() {
+            const traGop = document.getElementById('tragop');
+            const boxTraGop = document.getElementById('boxTraGop');
+            boxTraGop.style.display = traGop.checked ? 'block' : 'none';
+        }
+    </script>
 </head>
-<body class="bg-light">
+<body class="bg-light" onload="toggleTraGopBox()">
 
-<div class="container mt-5" style="max-width: 800px;">
+<div class="container mt-5" style="max-width: 900px;">
     <h2 class="mb-4 text-center text-primary fw-bold">Xác Nhận Đặt Hàng</h2>
 
     <?php if ($thongBao != ''): ?>
@@ -150,11 +248,58 @@ if (isset($_SESSION['gio_hang']) && !$datHangThanhCong) {
                         </p>
 
                         <form action="" method="POST">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Hình thức thanh toán</label>
+
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="HinhThucThanhToan" id="thanhtoanhet" value="thanhtoanhet" checked onclick="toggleTraGopBox()">
+                                    <label class="form-check-label" for="thanhtoanhet">
+                                        Thanh toán hết
+                                    </label>
+                                </div>
+
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="HinhThucThanhToan" id="tragop" value="tragop" onclick="toggleTraGopBox()">
+                                    <label class="form-check-label" for="tragop">
+                                        Mua trả góp
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div id="boxTraGop" style="display:none;">
+                                <div class="border rounded p-3 mb-3 bg-light">
+                                    <h6 class="fw-bold mb-3 text-primary">Thông tin trả góp</h6>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Số tiền trả trước</label>
+                                        <input type="number" name="SoTienTraTruoc" class="form-control" min="0" value="0">
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Số tháng trả góp</label>
+                                        <select name="SoThangTraGop" class="form-select">
+                                            <option value="3">3 tháng</option>
+                                            <option value="6" selected>6 tháng</option>
+                                            <option value="9">9 tháng</option>
+                                            <option value="12">12 tháng</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Lãi suất (% / tháng)</label>
+                                        <input type="number" step="0.1" name="LaiSuat" class="form-control" value="1.5">
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="mb-4">
                                 <label class="form-label fw-bold">Ghi chú cho đơn hàng (Tùy chọn)</label>
                                 <textarea name="GhiChuHoaDon" class="form-control bg-light" rows="4" placeholder="Ví dụ: Giao hàng vào giờ hành chính, bọc kỹ hàng giúp mình..."></textarea>
                             </div>
-                            <button type="submit" class="btn btn-success w-100 fs-5 py-2 fw-bold shadow-sm">XÁC NHẬN ĐẶT HÀNG</button>
+
+                            <button type="submit" class="btn btn-success w-100 fs-5 py-2 fw-bold shadow-sm">
+                                XÁC NHẬN ĐẶT HÀNG
+                            </button>
                         </form>
                     </div>
                 </div>
@@ -165,7 +310,7 @@ if (isset($_SESSION['gio_hang']) && !$datHangThanhCong) {
                     <div class="card-body p-4">
                         <h5 class="mb-3 fw-bold border-bottom pb-2">Tóm tắt giỏ hàng</h5>
                         <p class="d-flex justify-content-between">
-                            <span>Số loại sản phẩm:</span> 
+                            <span>Số loại sản phẩm:</span>
                             <span class="fw-bold"><?php echo count($_SESSION['gio_hang']); ?></span>
                         </p>
                         <hr>

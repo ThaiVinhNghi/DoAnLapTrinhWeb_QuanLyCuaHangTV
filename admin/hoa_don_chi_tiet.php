@@ -3,7 +3,7 @@ session_start();
 require_once '../connect.php';
 
 // Lấy ID hóa đơn từ thanh địa chỉ (URL)
-$id_hoadon = isset($_GET['id']) ? $_GET['id'] : 0;
+$id_hoadon = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 if ($id_hoadon == 0) {
     echo "<script>alert('Không tìm thấy mã hóa đơn!'); window.location.href='hoa_don.php';</script>";
@@ -14,18 +14,62 @@ $thongBao = '';
 
 // --- XỬ LÝ KHI ADMIN BẤM NÚT "DUYỆT ĐƠN HÀNG" ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['duyet_don'])) {
-    // GIẢ ĐỊNH: ID nhân viên đang đăng nhập được lưu ở $_SESSION['nhan_vien_id']. 
-    // Nếu bạn chưa code phần login Admin lưu session này, mình tạm gán = 1 (Là tài khoản Thái Vĩnh Nghi) để bạn test nhé!
-    $nhanVienID = isset($_SESSION['nhan_vien_id']) ? $_SESSION['nhan_vien_id'] : 1; 
+    $nhanVienID = isset($_SESSION['nhan_vien_id']) ? (int)$_SESSION['nhan_vien_id'] : 1;
 
-    $sql_duyet = "UPDATE hoadon SET NhanVienID = ? WHERE ID = ?";
-    $stmt_duyet = $conn->prepare($sql_duyet);
-    $stmt_duyet->bind_param("ii", $nhanVienID, $id_hoadon);
-    
-    if ($stmt_duyet->execute()) {
-        $thongBao = "<div class='alert alert-success'><i class='bi bi-check-circle'></i> Đã duyệt đơn hàng thành công!</div>";
-    } else {
-        $thongBao = "<div class='alert alert-danger'>Lỗi: " . $conn->error . "</div>";
+    $conn->begin_transaction();
+
+    try {
+        // 1. Duyệt hóa đơn
+        $sql_duyet = "UPDATE hoadon SET NhanVienID = ? WHERE ID = ?";
+        $stmt_duyet = $conn->prepare($sql_duyet);
+        $stmt_duyet->bind_param("ii", $nhanVienID, $id_hoadon);
+        $stmt_duyet->execute();
+
+        // 2. Lấy danh sách sản phẩm trong hóa đơn
+        $sql_sp = "SELECT SanPhamID, SoLuongBan 
+                   FROM hoadon_chitiet 
+                   WHERE HoaDonID = ?";
+        $stmt_sp = $conn->prepare($sql_sp);
+        $stmt_sp->bind_param("i", $id_hoadon);
+        $stmt_sp->execute();
+        $result_sp = $stmt_sp->get_result();
+
+        while ($sp = $result_sp->fetch_assoc()) {
+            $sanPhamID = (int)$sp['SanPhamID'];
+            $soLuong = (int)$sp['SoLuongBan'];
+
+            // Đếm xem hiện tại đã có bao nhiêu dòng bảo hành cho hóa đơn + sản phẩm này
+            $sql_dem = "SELECT COUNT(*) AS tong
+                        FROM baohanh
+                        WHERE HoaDonID = ? AND SanPhamID = ?";
+            $stmt_dem = $conn->prepare($sql_dem);
+            $stmt_dem->bind_param("ii", $id_hoadon, $sanPhamID);
+            $stmt_dem->execute();
+            $row_dem = $stmt_dem->get_result()->fetch_assoc();
+
+            $soLuongDaCo = (int)$row_dem['tong'];
+
+            // Nếu chưa đủ số lượng thì tạo thêm
+            for ($i = $soLuongDaCo + 1; $i <= $soLuong; $i++) {
+                $ngayKichHoat = date('Y-m-d');
+                $ngayHetHan = date('Y-m-d', strtotime('+24 months'));
+
+                // Tạo serial tự động
+                $soSerial = 'BH-' . $id_hoadon . '-' . $sanPhamID . '-' . $i . '-' . strtoupper(substr(md5(uniqid()), 0, 5));
+
+                $sql_insert_bh = "INSERT INTO baohanh (HoaDonID, SanPhamID, SoSerial, NgayKichHoat, NgayHetHan, TrangThai)
+                                  VALUES (?, ?, ?, ?, ?, 'Đang bảo hành')";
+                $stmt_insert_bh = $conn->prepare($sql_insert_bh);
+                $stmt_insert_bh->bind_param("iisss", $id_hoadon, $sanPhamID, $soSerial, $ngayKichHoat, $ngayHetHan);
+                $stmt_insert_bh->execute();
+            }
+        }
+
+        $conn->commit();
+        $thongBao = "<div class='alert alert-success'><i class='bi bi-check-circle'></i> Đã duyệt đơn hàng và tự tạo phiếu bảo hành thành công!</div>";
+    } catch (Exception $e) {
+        $conn->rollback();
+        $thongBao = "<div class='alert alert-danger'>Lỗi: " . $e->getMessage() . "</div>";
     }
 }
 
@@ -47,6 +91,7 @@ if (!$hoaDon) {
 // --- TRUY VẤN LẤY TÊN NHÂN VIÊN ĐÃ DUYỆT (NẾU CÓ) ---
 $tenNhanVienDuyet = "Chưa có (Đang chờ duyệt)";
 $daDuyet = false;
+
 if (!empty($hoaDon['NhanVienID'])) {
     $daDuyet = true;
     $sql_nv = "SELECT HoVaTen FROM nhanvien WHERE ID = ?";
@@ -60,7 +105,7 @@ if (!empty($hoaDon['NhanVienID'])) {
 }
 
 // --- TRUY VẤN LẤY CHI TIẾT SẢN PHẨM TRONG ĐƠN HÀNG ---
-$sql_ct = "SELECT ct.SoLuongBan, ct.DonGiaBan, sp.TenSanPham, sp.HinhAnh 
+$sql_ct = "SELECT ct.SanPhamID, ct.SoLuongBan, ct.DonGiaBan, sp.TenSanPham, sp.HinhAnh 
            FROM hoadon_chitiet ct 
            JOIN sanpham sp ON ct.SanPhamID = sp.ID 
            WHERE ct.HoaDonID = ?";
@@ -68,6 +113,16 @@ $stmt_ct = $conn->prepare($sql_ct);
 $stmt_ct->bind_param("i", $id_hoadon);
 $stmt_ct->execute();
 $chiTietResult = $stmt_ct->get_result();
+
+// Đưa dữ liệu vào mảng để dễ dùng lại
+$danhSachSanPham = [];
+$tongTienDonHang = 0;
+
+while ($item = $chiTietResult->fetch_assoc()) {
+    $item['ThanhTien'] = $item['SoLuongBan'] * $item['DonGiaBan'];
+    $tongTienDonHang += $item['ThanhTien'];
+    $danhSachSanPham[] = $item;
+}
 ?>
 
 <!DOCTYPE html>
@@ -81,10 +136,12 @@ $chiTietResult = $stmt_ct->get_result();
 <body class="bg-light">
 
 <div class="container mt-4 mb-5" style="max-width: 900px;">
-    
+
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h3 class="text-primary fw-bold">Chi tiết hóa đơn #HD<?php echo $id_hoadon; ?></h3>
-        <a href="hoa_don.php" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Quay lại danh sách</a>
+        <a href="hoa_don.php" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Quay lại danh sách
+        </a>
     </div>
 
     <?php echo $thongBao; ?>
@@ -112,9 +169,9 @@ $chiTietResult = $stmt_ct->get_result();
                     <p class="mb-2"><strong>Ngày đặt:</strong> <?php echo date('H:i - d/m/Y', strtotime($hoaDon['NgayLap'])); ?></p>
                     <p class="mb-2"><strong>Ghi chú:</strong> <?php echo !empty($hoaDon['GhiChuHoaDon']) ? htmlspecialchars($hoaDon['GhiChuHoaDon']) : 'Không có'; ?></p>
                     <p class="mb-0">
-                        <strong>Trạng thái:</strong> 
+                        <strong>Trạng thái:</strong>
                         <?php if ($daDuyet): ?>
-                            <span class="badge bg-success">Đã duyệt bởi: <?php echo $tenNhanVienDuyet; ?></span>
+                            <span class="badge bg-success">Đã duyệt bởi: <?php echo htmlspecialchars($tenNhanVienDuyet); ?></span>
                         <?php else: ?>
                             <span class="badge bg-warning text-dark">Chờ xử lý</span>
                         <?php endif; ?>
@@ -137,26 +194,22 @@ $chiTietResult = $stmt_ct->get_result();
                         </tr>
                     </thead>
                     <tbody>
-                        <?php 
-                        $tongTienDonHang = 0;
-                        while ($item = $chiTietResult->fetch_assoc()) { 
-                            $thanhTien = $item['SoLuongBan'] * $item['DonGiaBan'];
-                            $tongTienDonHang += $thanhTien;
-                            // Kiểm tra hình ảnh
-                            $hinhAnh = !empty($item['HinhAnh']) ? "../uploads/" . $item['HinhAnh'] : "../uploads/no-image.jpg";
-                        ?>
-                        <tr>
-                            <td class="ps-3">
-                                <div class="d-flex align-items-center">
-                                    <img src="<?php echo $hinhAnh; ?>" width="50" class="rounded me-3 border" alt="Tivi">
-                                    <span class="fw-bold"><?php echo htmlspecialchars($item['TenSanPham']); ?></span>
-                                </div>
-                            </td>
-                            <td class="text-center"><?php echo $item['SoLuongBan']; ?></td>
-                            <td class="text-end text-danger"><?php echo number_format($item['DonGiaBan'], 0, ',', '.'); ?> đ</td>
-                            <td class="text-end fw-bold text-danger pe-3"><?php echo number_format($thanhTien, 0, ',', '.'); ?> đ</td>
-                        </tr>
-                        <?php } ?>
+                        <?php foreach ($danhSachSanPham as $item): ?>
+                            <?php
+                                $hinhAnh = !empty($item['HinhAnh']) ? "../uploads/" . $item['HinhAnh'] : "../uploads/no-image.jpg";
+                            ?>
+                            <tr>
+                                <td class="ps-3">
+                                    <div class="d-flex align-items-center">
+                                        <img src="<?php echo $hinhAnh; ?>" width="50" class="rounded me-3 border" alt="Tivi">
+                                        <span class="fw-bold"><?php echo htmlspecialchars($item['TenSanPham']); ?></span>
+                                    </div>
+                                </td>
+                                <td class="text-center"><?php echo (int)$item['SoLuongBan']; ?></td>
+                                <td class="text-end text-danger"><?php echo number_format($item['DonGiaBan'], 0, ',', '.'); ?> đ</td>
+                                <td class="text-end fw-bold text-danger pe-3"><?php echo number_format($item['ThanhTien'], 0, ',', '.'); ?> đ</td>
+                            </tr>
+                        <?php endforeach; ?>
                     </tbody>
                     <tfoot class="table-light">
                         <tr>
@@ -167,19 +220,29 @@ $chiTietResult = $stmt_ct->get_result();
                 </table>
             </div>
         </div>
-        
-        <div class="card-footer bg-white p-4 text-end">
-            <?php if (!$daDuyet): ?>
-                <form action="" method="POST">
-                    <button type="submit" name="duyet_don" class="btn btn-success btn-lg px-5">
-                        <i class="bi bi-check2-all"></i> DUYỆT ĐƠN HÀNG NÀY
+
+        <div class="card-footer bg-white p-4">
+            <div class="d-flex justify-content-end gap-2 flex-wrap">
+                <?php if (!$daDuyet): ?>
+                    <form action="" method="POST" class="m-0">
+                        <button type="submit" name="duyet_don" class="btn btn-success btn-lg px-4">
+                            <i class="bi bi-check2-all"></i> DUYỆT ĐƠN HÀNG
+                        </button>
+                    </form>
+
+                    <button class="btn btn-outline-secondary btn-lg px-4" disabled>
+                        <i class="bi bi-printer"></i> Xuất hóa đơn
                     </button>
-                </form>
-            <?php else: ?>
-                <button class="btn btn-secondary btn-lg px-5" disabled>
-                    <i class="bi bi-lock-fill"></i> Đơn hàng đã được duyệt
-                </button>
-            <?php endif; ?>
+                <?php else: ?>
+                    <a href="xuat_hoa_don.php?id=<?php echo $id_hoadon; ?>" target="_blank" class="btn btn-primary btn-lg px-4">
+                        <i class="bi bi-printer-fill"></i> Xuất hóa đơn
+                    </a>
+
+                    <button class="btn btn-secondary btn-lg px-4" disabled>
+                        <i class="bi bi-lock-fill"></i> Đơn hàng đã được duyệt
+                    </button>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 
