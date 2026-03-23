@@ -96,5 +96,49 @@ Người trực tiếp sử dụng hệ thống để mua sắm:
  ├── 📄 gio_hang.php             # Xử lý Giỏ hàng
  ├── 📄 thanh_toan.php           # Xử lý Thanh toán
  ├── 📄 dang_ky.php              # Form đăng ký tài khoản
+🚀 Hướng dẫn cài đặt và chạy dự án
+Bước 1: Clone source code
+Mở Terminal hoặc Command Prompt và chạy lệnh sau:
+
+Bash
+git clone [https://github.com/ThaiVinhNghi/DoAnLapTrinhWeb_QuanLyCuaHangTV.git](https://github.com/ThaiVinhNghi/DoAnLapTrinhWeb_QuanLyCuaHangTV.git)
+Bước 2: Cài đặt vào XAMPP
+Di chuyển thư mục project vừa clone về vào thư mục htdocs của XAMPP.
+
+Ví dụ đường dẫn: C:\xampp\htdocs\DoAnLapTrinhWeb_QuanLyCuaHangTV
+Bước 3: Khởi động Server
+Mở XAMPP Control Panel, sau đó khởi động 2 module:
+
+Apache
+
+MySQL (Lưu ý kiểm tra xem cổng đang là 3306 hay 3307)
+Bước 4: Thiết lập Cơ sở dữ liệu
+Truy cập http://localhost/phpmyadmin trên trình duyệt.
+
+Tạo một Database mới.
+
+Chuyển sang tab Import (Nhập).
+
+Chọn và import file quanlycuahangtivi.sql hoặc CSDL_DoAnWeb.sql có sẵn trong thư mục project.
+Bước 5: Cấu hình kết nối CSDL
+Mở file connect.php bằng Visual Studio Code và cập nhật thông tin cho khớp với máy của bạn:
+$host = "localhost";    // hoặc 127.0.0.1
+$user = "root";
+$password = "";         // Mật khẩu MySQL (thường để trống)
+$database = "ten_database_vua_tao";
+$port = 3306;           // Đổi thành 3307 nếu máy bạn khác
+Kết luận
+Dự án là cơ hội để nhóm rèn luyện và áp dụng thực tế các kiến thức:
+
+Phân tích và thiết kế hệ thống web thực tiễn.
+
+Lập trình PHP kết hợp thao tác cơ sở dữ liệu MySQL.
+
+Quản lý phiên bản và làm việc nhóm hiệu quả thông qua GitHub.
+
+Xây dựng luồng nghiệp vụ hoàn chỉnh từ mua hàng đến quản lý nhân sự.
+
+📎 Repository GitHub: DoAnLapTrinhWeb_QuanLyCuaHangTV
+Nếu các bạn có ý tưởng mới, muốn đóng góp thêm tính năng hoặc gặp khó khăn trong quá trình cài đặt, đừng ngần ngại nhắn tin hoặc tạo Issue / Pull Request nhé. Tụi mình luôn sẵn sàng giúp đỡ, giải đáp và cùng nhau học hỏi phát triển! 😊
  ├── 📄 login.php                # Đăng nhập hệ thống
  └── 📄 quanlycuahangtivi.sql    # File dump Cơ sở dữ liệu
