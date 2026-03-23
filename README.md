@@ -84,8 +84,6 @@ Người trực tiếp sử dụng hệ thống để mua sắm:
 ---
 
 ## 🗂️ Cấu trúc mã nguồn chính
-
-```text
 📁 DoAnLapTrinhWeb_QuanLyCuaHangTV
  ├── 📁 admin/                   # Khu vực dành riêng cho quản trị hệ thống
  ├── 📁 uploads/                 # Lưu trữ hình ảnh và dữ liệu tải lên
