@@ -2,10 +2,10 @@
 header('Content-Type: text/html; charset=utf-8');
 
 $servername = "127.0.0.1";
-$username   = "root";
-$password   = "";
-$dbname     = "QuanLyCuaHangTivi";
-$port       = 3306;
+$username = "root";
+$password = "";
+$dbname = "QuanLyCuaHangTivi";
+$port = 3306;
 
 $conn = new mysqli($servername, $username, $password, $dbname, $port);
 
