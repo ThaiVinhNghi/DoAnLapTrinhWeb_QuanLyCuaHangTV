@@ -94,6 +94,10 @@ Người trực tiếp sử dụng hệ thống để mua sắm:
  ├── 📄 gio_hang.php             # Xử lý Giỏ hàng
  ├── 📄 thanh_toan.php           # Xử lý Thanh toán
  ├── 📄 dang_ky.php              # Form đăng ký tài khoản
+
+
+
+
 🚀 Hướng dẫn cài đặt và chạy dự án
 Bước 1: Clone source code
 Mở Terminal hoặc Command Prompt và chạy lệnh sau:
@@ -110,6 +114,7 @@ Mở XAMPP Control Panel, sau đó khởi động 2 module:
 Apache
 
 MySQL (Lưu ý kiểm tra xem cổng đang là 3306 hay 3307)
+
 Bước 4: Thiết lập Cơ sở dữ liệu
 Truy cập http://localhost/phpmyadmin trên trình duyệt.
 
@@ -118,6 +123,8 @@ Tạo một Database mới.
 Chuyển sang tab Import (Nhập).
 
 Chọn và import file quanlycuahangtivi.sql hoặc CSDL_DoAnWeb.sql có sẵn trong thư mục project.
+
+
 Bước 5: Cấu hình kết nối CSDL
 Mở file connect.php bằng Visual Studio Code và cập nhật thông tin cho khớp với máy của bạn:
 $host = "localhost";    // hoặc 127.0.0.1
