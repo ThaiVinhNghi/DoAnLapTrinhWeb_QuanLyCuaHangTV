@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once '../connect.php';
+require_once '../nhatky_helper.php'; // Gọi file chứa hàm ghi nhật ký
 
 $id_tragop = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
@@ -70,6 +71,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['duyet_tragop'])) {
         $stmt_update_tg->execute();
 
         $conn->commit();
+
+        // Ghi nhật ký duyệt hồ sơ
+        ghiNhatKyTuSession(
+            $conn, 
+            'DuyetHoSo', 
+            'tragop', 
+            $id_tragop, 
+            "Duyệt hồ sơ trả góp #TG{$id_tragop} và tạo hóa đơn #HD{$id_hoadon_moi}"
+        );
+
         $thongBao = "<div class='alert alert-success'><i class='bi bi-check-circle'></i> Đã duyệt hồ sơ trả góp và tạo hóa đơn #HD{$id_hoadon_moi} thành công!</div>";
     } catch (Exception $e) {
         $conn->rollback();
@@ -130,6 +141,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['thu_tien'])) {
         $stmt_update->execute();
 
         $conn->commit();
+
+        // Ghi nhật ký thu tiền
+        $soTienFormat = number_format($soTienThu, 0, ',', '.');
+        $ghiChuLog = "Thu {$soTienFormat}đ cho kỳ {$kyThu}. " . ($tinhTrangTraMoi == 'Đã tất toán' ? "(Đã tất toán)" : "");
+        
+        ghiNhatKyTuSession(
+            $conn, 
+            'ThuTien', 
+            'tragop_thanhtoan', 
+            $id_tragop, 
+            $ghiChuLog
+        );
+
         $thongBao = "<div class='alert alert-success'><i class='bi bi-cash-coin'></i> Thu tiền thành công!</div>";
     } catch (Exception $e) {
         $conn->rollback();
@@ -173,6 +197,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['nhac_nho'])) {
         $stmt_update->execute();
 
         $conn->commit();
+
+        // Ghi nhật ký nhắc nhở
+        $moTaNhacNho = ($soLanNhac >= 3) ? "Nhắc nhở lần {$soLanNhac}. Đã chuyển thành Nợ xấu." : "Nhắc nhở đóng tiền lần {$soLanNhac}";
+        
+        ghiNhatKyTuSession(
+            $conn, 
+            'NhacNho', 
+            'tragop', 
+            $id_tragop, 
+            $moTaNhacNho
+        );
 
         if ($soLanNhac >= 3) {
             $thongBao = "<div class='alert alert-danger'><i class='bi bi-exclamation-triangle'></i> Đã nhắc đủ 3 lần. Hồ sơ này đã chuyển sang <strong>Nợ xấu</strong>.</div>";

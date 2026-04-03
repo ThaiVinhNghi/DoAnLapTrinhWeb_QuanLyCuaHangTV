@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once 'connect.php';
+require_once 'nhatky_helper.php';
 
 // 1. Kiểm tra giỏ hàng
 if (!isset($_SESSION['gio_hang']) || empty($_SESSION['gio_hang'])) {
@@ -9,10 +10,12 @@ if (!isset($_SESSION['gio_hang']) || empty($_SESSION['gio_hang'])) {
 }
 
 // 2. Kiểm tra đăng nhập khách hàng
-if (!isset($_SESSION['khach_hang_id'])) {
+if (!isset($_SESSION['khach_hang_id']) && !isset($_SESSION['khachhang_id'])) {
     header("Location: login_khach.php");
     exit();
 }
+
+$khachHangID = (int)($_SESSION['khach_hang_id'] ?? $_SESSION['khachhang_id']);
 
 $thongBao = '';
 $datHangThanhCong = false;
@@ -21,6 +24,9 @@ $tongTienGioHang = 0;
 // TÍNH TỔNG TIỀN HIỂN THỊ
 if (isset($_SESSION['gio_hang'])) {
     foreach ($_SESSION['gio_hang'] as $id_sp => $so_luong) {
+        $id_sp = (int)$id_sp;
+        $so_luong = (int)$so_luong;
+
         $sql_gia = "SELECT DonGia, PhanTramGiam FROM sanpham WHERE ID = ?";
         $stmt_gia = $conn->prepare($sql_gia);
         $stmt_gia->bind_param("i", $id_sp);
@@ -33,15 +39,16 @@ if (isset($_SESSION['gio_hang'])) {
             $giaBanThucTe = $giaGoc - ($giaGoc * $phanTram / 100);
             $tongTienGioHang += ($giaBanThucTe * $so_luong);
         }
+
+        $stmt_gia->close();
     }
 }
 
 // Xử lý khi khách bấm đặt hàng
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $khachHangID = (int)$_SESSION['khach_hang_id'];
     $ngayLap = date('Y-m-d H:i:s');
     $ghiChu = isset($_POST['GhiChuHoaDon']) ? trim($_POST['GhiChuHoaDon']) : '';
-    $hinhThucThanhToan = isset($_POST['HinhThucThanhToan']) ? $_POST['HinhThucThanhToan'] : 'thanhtoanhet';
+    $hinhThucThanhToan = isset($_POST['HinhThucThanhToan']) ? trim($_POST['HinhThucThanhToan']) : 'thanhtoanhet';
 
     $conn->begin_transaction();
 
@@ -49,7 +56,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // =========================
         // 1. THANH TOÁN HẾT
         // =========================
-        if ($hinhThucThanhToan == 'thanhtoanhet') {
+        if ($hinhThucThanhToan === 'thanhtoanhet') {
             $nhanVienID = null;
 
             $sql_hoadon = "INSERT INTO hoadon (NhanVienID, KhachHangID, NgayLap, GhiChuHoaDon) VALUES (?, ?, ?, ?)";
@@ -58,6 +65,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $stmt_hd->execute();
 
             $id_hoadon = $conn->insert_id;
+            $stmt_hd->close();
 
             foreach ($_SESSION['gio_hang'] as $id_sp => $so_luong) {
                 $id_sp = (int)$id_sp;
@@ -82,19 +90,33 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     throw new Exception("Sản phẩm ID $id_sp không đủ số lượng trong kho.");
                 }
 
+                $stmt_sp->close();
+
                 $sql_ct = "INSERT INTO hoadon_chitiet (HoaDonID, SanPhamID, SoLuongBan, DonGiaBan)
                            VALUES (?, ?, ?, ?)";
                 $stmt_ct = $conn->prepare($sql_ct);
                 $stmt_ct->bind_param("iiid", $id_hoadon, $id_sp, $so_luong, $donGiaBanThucTe);
                 $stmt_ct->execute();
+                $stmt_ct->close();
 
                 $sql_update_sp = "UPDATE sanpham SET SoLuong = SoLuong - ? WHERE ID = ?";
                 $stmt_update = $conn->prepare($sql_update_sp);
                 $stmt_update->bind_param("ii", $so_luong, $id_sp);
                 $stmt_update->execute();
+                $stmt_update->close();
             }
 
             $conn->commit();
+
+            ghiNhatKyKhachHangTuSession(
+                $conn,
+                'DatHang',
+                'hoadon',
+                $id_hoadon,
+                'Khách hàng đặt hàng thanh toán hết, mã hóa đơn #HD' . $id_hoadon,
+                'ThanhCong'
+            );
+
             unset($_SESSION['gio_hang']);
             $thongBao = "Đặt hàng thành công! Mã đơn hàng của bạn là: <strong class='text-danger fs-4'>#HD{$id_hoadon}</strong>";
             $datHangThanhCong = true;
@@ -103,7 +125,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // =========================
         // 2. TRẢ GÓP
         // =========================
-        elseif ($hinhThucThanhToan == 'tragop') {
+        elseif ($hinhThucThanhToan === 'tragop') {
             $soTienTraTruoc = isset($_POST['SoTienTraTruoc']) ? (float)$_POST['SoTienTraTruoc'] : 0;
             $soThangTraGop = isset($_POST['SoThangTraGop']) ? (int)$_POST['SoThangTraGop'] : 6;
             $laiSuat = isset($_POST['LaiSuat']) ? (float)$_POST['LaiSuat'] : 1.5;
@@ -112,7 +134,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 throw new Exception("Số tiền trả trước không hợp lệ.");
             }
 
-            if (!in_array($soThangTraGop, [3, 6, 9, 12])) {
+            if (!in_array($soThangTraGop, [3, 6, 9, 12], true)) {
                 throw new Exception("Số tháng trả góp không hợp lệ.");
             }
 
@@ -128,7 +150,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $trangThai = 'Chờ duyệt';
             $tinhTrangTra = 'Chờ duyệt';
 
-            $sql_tragop = "INSERT INTO tragop 
+            $sql_tragop = "INSERT INTO tragop
                 (KhachHangID, NgayDangKy, SoTienTraTruoc, SoThangTraGop, LaiSuat, TongTien, SoTienConLai, TongPhaiTra, TienGopMoiThang, SoTienDaTra, SoLanNhacNho, GhiChu, TrangThai, TinhTrangTra)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
@@ -153,6 +175,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $stmt_tg->execute();
 
             $id_tragop = $conn->insert_id;
+            $stmt_tg->close();
 
             foreach ($_SESSION['gio_hang'] as $id_sp => $so_luong) {
                 $id_sp = (int)$id_sp;
@@ -178,19 +201,33 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     throw new Exception("Sản phẩm ID $id_sp không đủ số lượng trong kho.");
                 }
 
+                $stmt_sp->close();
+
                 $sql_ct = "INSERT INTO tragop_chitiet (TraGopID, SanPhamID, SoLuong, DonGia, ThanhTien)
                            VALUES (?, ?, ?, ?, ?)";
                 $stmt_ct = $conn->prepare($sql_ct);
                 $stmt_ct->bind_param("iiidd", $id_tragop, $id_sp, $so_luong, $donGiaBanThucTe, $thanhTien);
                 $stmt_ct->execute();
+                $stmt_ct->close();
 
                 $sql_update_sp = "UPDATE sanpham SET SoLuong = SoLuong - ? WHERE ID = ?";
                 $stmt_update = $conn->prepare($sql_update_sp);
                 $stmt_update->bind_param("ii", $so_luong, $id_sp);
                 $stmt_update->execute();
+                $stmt_update->close();
             }
 
             $conn->commit();
+
+            ghiNhatKyKhachHangTuSession(
+                $conn,
+                'DangKyTraGop',
+                'tragop',
+                $id_tragop,
+                'Khách hàng đăng ký hồ sơ trả góp #TG' . $id_tragop,
+                'ThanhCong'
+            );
+
             unset($_SESSION['gio_hang']);
             $thongBao = "Đăng ký mua trả góp thành công! Mã hồ sơ trả góp của bạn là: <strong class='text-danger fs-4'>#TG{$id_tragop}</strong>";
             $datHangThanhCong = true;
@@ -201,6 +238,27 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     } catch (Exception $e) {
         $conn->rollback();
+
+        if ($hinhThucThanhToan === 'tragop') {
+            ghiNhatKyKhachHangTuSession(
+                $conn,
+                'DangKyTraGop',
+                'tragop',
+                null,
+                'Đăng ký trả góp thất bại: ' . $e->getMessage(),
+                'ThatBai'
+            );
+        } else {
+            ghiNhatKyKhachHangTuSession(
+                $conn,
+                'DatHang',
+                'hoadon',
+                null,
+                'Đặt hàng thất bại: ' . $e->getMessage(),
+                'ThatBai'
+            );
+        }
+
         $thongBao = $e->getMessage();
     }
 }

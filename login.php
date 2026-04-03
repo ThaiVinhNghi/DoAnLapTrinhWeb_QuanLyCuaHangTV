@@ -1,41 +1,91 @@
 <?php
-// Bắt buộc phải có hàm này ở dòng ĐẦU TIÊN để khởi tạo Session
 session_start();
-
-// Gọi file kết nối cơ sở dữ liệu
 require_once 'connect.php';
+require_once 'nhatky_helper.php';
 
-$error = ''; // Biến lưu thông báo lỗi
+$error = '';
 
-// Kiểm tra xem người dùng có bấm nút Đăng nhập (Gửi form qua phương thức POST) chưa
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $username = $_POST['username'];
-    $password = $_POST['password'];
+    $username = trim($_POST['username'] ?? '');
+    $password = trim($_POST['password'] ?? '');
 
-    // Sử dụng Prepared Statement để chống lỗi bảo mật SQL Injection
-    $sql = "SELECT ID, HoVaTen, QuyenHan FROM NhanVien WHERE TenDangNhap = ? AND MatKhau = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("ss", $username, $password); // "ss" nghĩa là 2 tham số đều là chuỗi (string)
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    if ($result->num_rows > 0) {
-        // Đăng nhập thành công
-        $row = $result->fetch_assoc();
-        
-        // Lưu thông tin vào Session
-        $_SESSION['nhanvien_id'] = $row['ID'];
-        $_SESSION['ho_ten'] = $row['HoVaTen'];
-        $_SESSION['quyen_han'] = $row['QuyenHan']; // 1 là Admin, 0 là Nhân viên
-
-        // Chuyển hướng về trang chủ quản lý (ví dụ: index.php)
-        header("Location: admin/index.php");
-        exit();
+    if ($username === '' || $password === '') {
+        $error = "Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu!";
     } else {
-        // Đăng nhập thất bại
-        $error = "Tên đăng nhập hoặc mật khẩu không đúng!";
+        $sql = "SELECT ID, HoVaTen, TenDangNhap, QuyenHan
+                FROM nhanvien
+                WHERE TenDangNhap = ? AND MatKhau = ?
+                LIMIT 1";
+        $stmt = $conn->prepare($sql);
+
+        if ($stmt) {
+            $stmt->bind_param("ss", $username, $password);
+            $stmt->execute();
+            $result = $stmt->get_result();
+
+            if ($result && $result->num_rows > 0) {
+                $row = $result->fetch_assoc();
+
+                // Lưu các session chung cho mọi nhân viên
+                $_SESSION['nhanvien_id'] = (int)$row['ID'];
+                $_SESSION['nhan_vien_id'] = (int)$row['ID']; // alias để khỏi vỡ file cũ
+                $_SESSION['nhanvien_hoten'] = $row['HoVaTen'];
+                $_SESSION['ho_ten'] = $row['HoVaTen'];
+                $_SESSION['nhanvien_tendangnhap'] = $row['TenDangNhap'];
+                $_SESSION['ten_dang_nhap'] = $row['TenDangNhap'];
+                $_SESSION['quyen_han'] = (int)$row['QuyenHan'];
+
+                // NẾU LÀ ADMIN, PHẢI LƯU THÊM SESSION DÀNH RIÊNG CHO ADMIN
+                if ((int)$row['QuyenHan'] === 1) {
+                    $_SESSION['admin_id'] = (int)$row['ID'];
+                    
+                    // --- ĐÂY LÀ 2 DÒNG QUAN TRỌNG ĐƯỢC THÊM VÀO ---
+                    $_SESSION['admin_hoten'] = $row['HoVaTen'];
+                    $_SESSION['admin_tendangnhap'] = $row['TenDangNhap'];
+                    // ----------------------------------------------
+                } else {
+                    unset($_SESSION['admin_id']);
+                    unset($_SESSION['admin_hoten']);
+                    unset($_SESSION['admin_tendangnhap']);
+                }
+
+                ghiNhatKy(
+                    $conn,
+                    ((int)$row['QuyenHan'] === 1) ? 'Admin' : 'NhanVien',
+                    $row['ID'],
+                    $row['TenDangNhap'],
+                    $row['HoVaTen'],
+                    'DangNhap',
+                    'nhanvien',
+                    $row['ID'],
+                    'Đăng nhập hệ thống quản trị',
+                    'ThanhCong'
+                );
+
+                header("Location: admin/index.php");
+                exit();
+            } else {
+                $error = "Tên đăng nhập hoặc mật khẩu không đúng!";
+
+                ghiNhatKy(
+                    $conn,
+                    'NhanVien',
+                    null,
+                    $username,
+                    null,
+                    'DangNhap',
+                    'nhanvien',
+                    null,
+                    'Đăng nhập thất bại',
+                    'ThatBai'
+                );
+            }
+
+            $stmt->close();
+        } else {
+            $error = "Không thể chuẩn bị câu lệnh đăng nhập!";
+        }
     }
-    $stmt->close();
 }
 ?>
 
@@ -63,8 +113,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <div class="login-box">
     <h3 class="text-center mb-4 text-primary">HỆ THỐNG QUẢN LÝ</h3>
-    
-    <?php if($error != ''): ?>
+
+    <?php if ($error != ''): ?>
         <div class="alert alert-danger"><?php echo $error; ?></div>
     <?php endif; ?>
 

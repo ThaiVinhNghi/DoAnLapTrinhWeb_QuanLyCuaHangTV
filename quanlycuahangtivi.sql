@@ -609,6 +609,20 @@ UPDATE `tragop`
 SET `SoTienDaTra` = 1500000,
     `TinhTrangTra` = 'Đang góp'
 WHERE `ID` = 3;
+CREATE TABLE nhatky_hethong (
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    LoaiNguoiDung VARCHAR(20) NOT NULL,     -- Admin, NhanVien, KhachHang
+    NguoiDungID INT NULL,
+    TenDangNhap VARCHAR(100) NULL,
+    HoTen VARCHAR(255) NULL,
+    HanhDong VARCHAR(100) NOT NULL,         -- DangNhap, DangXuat, DatHang, DuyetTraGop...
+    BangTacDong VARCHAR(100) NULL,          -- nhanvien, khachhang, hoadon, tragop...
+    BanGhiID INT NULL,                      -- ID bản ghi liên quan
+    MoTa TEXT NULL,
+    TrangThai VARCHAR(50) DEFAULT 'ThanhCong',
+    DiaChiIP VARCHAR(50) NULL,
+    ThoiGian DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

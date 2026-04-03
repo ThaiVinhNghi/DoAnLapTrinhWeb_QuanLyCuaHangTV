@@ -1,8 +1,8 @@
 <?php
 session_start();
 require_once 'connect.php';
+require_once 'nhatky_helper.php';
 
-// Nếu khách đã đăng nhập rồi thì đẩy về thanh toán
 if (isset($_SESSION['khach_hang_id'])) {
     header("Location: thanh_toan.php");
     exit();
@@ -11,46 +11,94 @@ if (isset($_SESSION['khach_hang_id'])) {
 $thongBao = '';
 $loaiThongBao = 'danger';
 
-// Nếu vừa đăng ký thành công từ dang_ky.php chuyển sang
 if (isset($_GET['dangky']) && $_GET['dangky'] == 'thanhcong') {
     $thongBao = "Đăng ký thành công! Vui lòng đăng nhập.";
     $loaiThongBao = "success";
 }
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $tenDangNhap = trim($_POST['TenDangNhap']);
-    $matKhau = trim($_POST['MatKhau']);
+    $tenDangNhap = trim($_POST['TenDangNhap'] ?? '');
+    $matKhau = trim($_POST['MatKhau'] ?? '');
 
-    if (empty($tenDangNhap) || empty($matKhau)) {
+    if ($tenDangNhap === '' || $matKhau === '') {
         $thongBao = "Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu!";
         $loaiThongBao = "danger";
     } else {
-        // Kiểm tra trong bảng khachhang
-        $sql = "SELECT ID, HoVaTen, MatKhau FROM khachhang WHERE TenDangNhap = ?";
+        $sql = "SELECT ID, HoVaTen, TenDangNhap, MatKhau
+                FROM khachhang
+                WHERE TenDangNhap = ?
+                LIMIT 1";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("s", $tenDangNhap);
-        $stmt->execute();
-        $result = $stmt->get_result();
 
-        if ($row = $result->fetch_assoc()) {
-            if ($matKhau === $row['MatKhau']) {
-                // Đăng nhập thành công, lưu thông tin vào Session
-                $_SESSION['khach_hang_id'] = $row['ID'];
-                $_SESSION['khach_hang_ten'] = $row['HoVaTen'];
+        if ($stmt) {
+            $stmt->bind_param("s", $tenDangNhap);
+            $stmt->execute();
+            $result = $stmt->get_result();
 
-                // Chuyển hướng về thanh toán
-                header("Location: thanh_toan.php");
-                exit();
+            if ($row = $result->fetch_assoc()) {
+                if ($matKhau === $row['MatKhau']) {
+                    $_SESSION['khach_hang_id'] = (int)$row['ID'];
+                    $_SESSION['khachhang_id'] = (int)$row['ID']; // alias
+                    $_SESSION['khach_hang_ten'] = $row['HoVaTen'];
+                    $_SESSION['khachhang_hoten'] = $row['HoVaTen']; // alias
+                    $_SESSION['khach_hang_tendangnhap'] = $row['TenDangNhap'];
+                    $_SESSION['khachhang_tendangnhap'] = $row['TenDangNhap']; // alias
+
+                    ghiNhatKy(
+                        $conn,
+                        'KhachHang',
+                        $row['ID'],
+                        $row['TenDangNhap'],
+                        $row['HoVaTen'],
+                        'DangNhap',
+                        'khachhang',
+                        $row['ID'],
+                        'Khách hàng đăng nhập',
+                        'ThanhCong'
+                    );
+
+                    header("Location: thanh_toan.php");
+                    exit();
+                } else {
+                    $thongBao = "Mật khẩu không chính xác!";
+                    $loaiThongBao = "danger";
+
+                    ghiNhatKy(
+                        $conn,
+                        'KhachHang',
+                        null,
+                        $tenDangNhap,
+                        null,
+                        'DangNhap',
+                        'khachhang',
+                        null,
+                        'Đăng nhập khách hàng thất bại: sai mật khẩu',
+                        'ThatBai'
+                    );
+                }
             } else {
-                $thongBao = "Mật khẩu không chính xác!";
+                $thongBao = "Tài khoản không tồn tại!";
                 $loaiThongBao = "danger";
+
+                ghiNhatKy(
+                    $conn,
+                    'KhachHang',
+                    null,
+                    $tenDangNhap,
+                    null,
+                    'DangNhap',
+                    'khachhang',
+                    null,
+                    'Đăng nhập khách hàng thất bại: tài khoản không tồn tại',
+                    'ThatBai'
+                );
             }
+
+            $stmt->close();
         } else {
-            $thongBao = "Tài khoản không tồn tại!";
+            $thongBao = "Không thể chuẩn bị câu lệnh đăng nhập!";
             $loaiThongBao = "danger";
         }
-
-        $stmt->close();
     }
 }
 ?>

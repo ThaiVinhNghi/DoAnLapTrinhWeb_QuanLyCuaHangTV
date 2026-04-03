@@ -72,123 +72,8 @@ switch ($loc_gia_noibat) {
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-
-    <style>
-        html { scroll-behavior: smooth; }
-        body { background-color: #f8f9fa; }
-        
-        /* Đồng hồ đếm ngược */
-        .flash-sale-timer {
-            background: linear-gradient(45deg, #ff0000, #ff7300);
-            color: white;
-            padding: 5px 15px;
-            border-radius: 50px;
-            font-family: monospace;
-            font-size: 1.1rem;
-            font-weight: bold;
-            box-shadow: 0 4px 10px rgba(255, 0, 0, 0.3);
-            animation: pulse-timer 1.5s infinite;
-        }
-        @keyframes pulse-timer {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.02); }
-            100% { transform: scale(1); }
-        }
-
-        .product-card {
-            transition: transform 0.3s, box-shadow 0.3s;
-            border-radius: 18px;
-            overflow: hidden;
-        }
-        .product-card:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 12px 22px rgba(0,0,0,0.15);
-        }
-        .product-img {
-            height: 220px;
-            object-fit: contain;
-            width: 100%;
-            background-color: #fff;
-        }
-        #lien-he, #khuyen-mai { scroll-margin-top: 85px; }
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-        .filter-form {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        .filter-box {
-            min-width: 150px;
-            height: 46px;
-            border-radius: 12px;
-        }
-        .filter-btn, .clear-btn {
-            height: 46px;
-            padding: 0 16px;
-            border-radius: 12px;
-            font-weight: 700;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .brand-badge {
-            top: 10px;
-            right: 10px;
-            z-index: 10;
-            border-radius: 10px;
-            padding: 8px 10px;
-            font-size: 0.95rem;
-        }
-        .product-title {
-            min-height: 58px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        @media (max-width: 768px) {
-            .section-header { align-items: flex-start; }
-            .filter-form { width: 100%; }
-            .filter-box { width: 100%; min-width: unset; }
-            .filter-btn, .clear-btn { justify-content: center; flex: 1; }
-        }
-
-        /* Nút Zalo Rung Lắc */
-        .zalo-btn {
-            position: fixed;
-            bottom: 25px;
-            right: 25px;
-            width: 60px;
-            height: 60px;
-            background-color: #0068ff;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 4px 15px rgba(0, 104, 255, 0.5);
-            z-index: 9999;
-            animation: pulse-zalo 1.5s infinite;
-            transition: transform 0.3s;
-        }
-        .zalo-btn:hover {
-            transform: scale(1.1);
-        }
-        .zalo-btn img {
-            width: 40px;
-            height: 40px;
-        }
-        @keyframes pulse-zalo {
-            0% { box-shadow: 0 0 0 0 rgba(0, 104, 255, 0.7); }
-            70% { box-shadow: 0 0 0 15px rgba(0, 104, 255, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(0, 104, 255, 0); }
-        }
-    </style>
+    
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -231,13 +116,11 @@ switch ($loc_gia_noibat) {
 
 <div class="container mt-4">
     <div id="bannerCarousel" class="carousel slide carousel-fade shadow rounded overflow-hidden" data-bs-ride="carousel">
-        
         <div class="carousel-indicators">
             <button type="button" data-bs-target="#bannerCarousel" data-bs-slide-to="0" class="active"></button>
             <button type="button" data-bs-target="#bannerCarousel" data-bs-slide-to="1"></button>
             <button type="button" data-bs-target="#bannerCarousel" data-bs-slide-to="2"></button>
         </div>
-
         <div class="carousel-inner">
             <div class="carousel-item active" data-bs-interval="3000">
                 <div class="p-4 p-md-5 text-bg-dark text-center d-flex flex-column justify-content-center align-items-center" 
@@ -249,7 +132,6 @@ switch ($loc_gia_noibat) {
                     </a>
                 </div>
             </div>
-
             <div class="carousel-item" data-bs-interval="3000">
                 <div class="p-4 p-md-5 text-bg-dark text-center d-flex flex-column justify-content-center align-items-center" 
                      style="height: 320px; background: linear-gradient(to right, #ff416c, #ff4b2b);">
@@ -260,7 +142,6 @@ switch ($loc_gia_noibat) {
                     </a>
                 </div>
             </div>
-
             <div class="carousel-item" data-bs-interval="3000">
                 <div class="p-4 p-md-5 text-bg-dark text-center d-flex flex-column justify-content-center align-items-center" 
                      style="height: 320px; background: linear-gradient(to right, #11998e, #38ef7d);">
@@ -272,7 +153,6 @@ switch ($loc_gia_noibat) {
                 </div>
             </div>
         </div>
-
         <button class="carousel-control-prev" type="button" data-bs-target="#bannerCarousel" data-bs-slide="prev">
             <span class="carousel-control-prev-icon" aria-hidden="true"></span>
         </button>
@@ -471,6 +351,75 @@ switch ($loc_gia_noibat) {
     </div>
 </div>
 
+<?php if (isset($_SESSION['khach_hang_id'])): ?>
+<div class="container mb-5 mt-5" id="san-pham-da-mua">
+    <div class="section-header mb-4 border-bottom border-success pb-2">
+        <h3 class="text-success text-uppercase fw-bold mb-0">
+            <i class="bi bi-box-seam"></i> Sản phẩm bạn đã mua
+        </h3>
+    </div>
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle text-center mb-0">
+                    <thead class="table-success">
+                        <tr>
+                            <th width="120">Hình ảnh</th>
+                            <th class="text-start">Tên sản phẩm</th>
+                            <th width="120">Hóa đơn</th>
+                            <th width="120">Ngày mua</th>
+                            <th width="100">Số lượng</th>
+                            <th width="180">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        $kh_id = (int)$_SESSION['khach_hang_id'];
+                        $sql_damua = "SELECT sp.TenSanPham, sp.HinhAnh, hd.ID as HoaDonID, hd.NgayLap, hdct.SoLuongBan, sp.ID as SanPhamID
+                                FROM hoadon hd
+                                JOIN hoadon_chitiet hdct ON hd.ID = hdct.HoaDonID
+                                JOIN sanpham sp ON hdct.SanPhamID = sp.ID
+                                WHERE hd.KhachHangID = $kh_id
+                                ORDER BY hd.ID DESC";
+                        $result_damua = $conn->query($sql_damua);
+                        
+                        if ($result_damua && $result_damua->num_rows > 0):
+                            while ($row_mua = $result_damua->fetch_assoc()):
+                                $img_mua = !empty($row_mua['HinhAnh']) ? "uploads/" . $row_mua['HinhAnh'] : "uploads/no-image.jpg";
+                        ?>
+                            <tr>
+                                <td><img src="<?php echo $img_mua; ?>" width="80" class="img-fluid rounded border" alt="Tivi"></td>
+                                <td class="text-start fw-bold text-dark"><?php echo htmlspecialchars($row_mua['TenSanPham']); ?></td>
+                                <td class="text-primary fw-bold">#HD<?php echo $row_mua['HoaDonID']; ?></td>
+                                <td><?php echo date('d/m/Y', strtotime($row_mua['NgayLap'])); ?></td>
+                                <td class="fw-bold"><?php echo (int)$row_mua['SoLuongBan']; ?></td>
+                                <td>
+                                    <div class="d-flex gap-2 justify-content-center">
+                                        <a href="doitra_yeucau.php?hd_id=<?php echo $row_mua['HoaDonID']; ?>&sp_id=<?php echo $row_mua['SanPhamID']; ?>&action=doi" class="btn btn-sm btn-warning fw-bold text-dark shadow-sm">
+                                            <i class="bi bi-arrow-left-right"></i> Đổi hàng
+                                        </a>
+                                        <a href="doitra_yeucau.php?hd_id=<?php echo $row_mua['HoaDonID']; ?>&sp_id=<?php echo $row_mua['SanPhamID']; ?>&action=tra" class="btn btn-sm btn-danger fw-bold shadow-sm">
+                                            <i class="bi bi-arrow-return-left"></i> Trả hàng
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php
+                            endwhile;
+                        else:
+                        ?>
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">Bạn chưa có sản phẩm nào đã mua.</td>
+                            </tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <div class="container mb-5 mt-5" id="lien-he">
     <h3 class="border-bottom pb-2 mb-4 text-primary text-uppercase fw-bold">Liên Hệ Với Chúng Tôi</h3>
     <div class="row g-4">
@@ -508,54 +457,14 @@ switch ($loc_gia_noibat) {
     </div>
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-<script>
-    function updateFlashSaleTimer() {
-        const now = new Date();
-        const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-        const diff = endOfDay - now;
-
-        if (diff <= 0) return;
-
-        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24).toString().padStart(2, '0');
-        const minutes = Math.floor((diff / 1000 / 60) % 60).toString().padStart(2, '0');
-        const seconds = Math.floor((diff / 1000) % 60).toString().padStart(2, '0');
-
-        const timerSpan = document.getElementById('time-left');
-        if(timerSpan) timerSpan.innerText = `${hours}:${minutes}:${seconds}`;
-    }
-    
-    setInterval(updateFlashSaleTimer, 1000);
-    updateFlashSaleTimer(); 
-</script>
-</body>
-<style>
-    .nút-chat-nổi {
-        position: fixed; /* Cố định vị trí trên màn hình */
-        bottom: 30px;    /* Cách mép dưới màn hình 30px */
-        right: 30px;     /* Cách mép phải màn hình 30px */
-        background-color: #25D366; /* Màu nền xanh lá (bạn có thể đổi mã màu) */
-        width: 60px;     /* Chiều rộng hình tròn */
-        height: 60px;    /* Chiều cao hình tròn */
-        border-radius: 50%; /* Bo tròn góc 100% để thành hình tròn */
-        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3); /* Tạo bóng đổ cho đẹp */
-        display: flex;
-        justify-content: center; /* Căn giữa nội dung bên trong */
-        align-items: center;     /* Căn giữa nội dung bên trong */
-        z-index: 9999; /* Số to để luôn nằm trên cùng, không bị các ảnh khác che mất */
-        transition: transform 0.3s ease; /* Hiệu ứng mượt khi di chuột */
-    }
-
-    /* Hiệu ứng phóng to một chút khi rê chuột vào */
-    .nút-chat-nổi:hover {
-        transform: scale(1.1); 
-    }
-</style>
-
 <a href="https://zalo.me/0931082845" target="_blank" class="nút-chat-nổi">
     <svg xmlns="http://www.w3.org/2000/svg" width="35" height="35" fill="white" viewBox="0 0 16 16">
       <path d="M8 15c4.418 0 8-3.134 8-7s-3.582-7-8-7-8 3.134-8 7c0 1.76.743 3.37 1.97 4.6-.097 1.016-.417 2.13-.771 2.966-.079.186.074.394.273.362 2.256-.37 3.597-.938 4.18-1.234A9.06 9.06 0 0 0 8 15z"/>
     </svg>
 </a>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="script.js"></script>
+
+</body>
 </html>
