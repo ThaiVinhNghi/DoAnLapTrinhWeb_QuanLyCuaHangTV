@@ -369,23 +369,35 @@ switch ($loc_gia_noibat) {
                             <th width="120">Hóa đơn</th>
                             <th width="120">Ngày mua</th>
                             <th width="100">Số lượng</th>
-                            <th width="180">Hành động</th>
+                            <th width="220">Hành động</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php
                         $kh_id = (int)$_SESSION['khach_hang_id'];
-                        $sql_damua = "SELECT sp.TenSanPham, sp.HinhAnh, hd.ID as HoaDonID, hd.NgayLap, hdct.SoLuongBan, sp.ID as SanPhamID
+                        
+                        // SỬA SQL: Dùng LEFT JOIN để kết nối thêm bảng tragop (nếu hóa đơn này là mua trả góp)
+                        $sql_damua = "SELECT sp.TenSanPham, sp.HinhAnh, hd.ID as HoaDonID, hd.NgayLap, hdct.SoLuongBan, sp.ID as SanPhamID,
+                                             tg.ID as TraGopID, tg.TinhTrangTra
                                 FROM hoadon hd
                                 JOIN hoadon_chitiet hdct ON hd.ID = hdct.HoaDonID
                                 JOIN sanpham sp ON hdct.SanPhamID = sp.ID
+                                LEFT JOIN tragop tg ON hd.ID = tg.HoaDonID
                                 WHERE hd.KhachHangID = $kh_id
                                 ORDER BY hd.ID DESC";
+                                
                         $result_damua = $conn->query($sql_damua);
                         
                         if ($result_damua && $result_damua->num_rows > 0):
                             while ($row_mua = $result_damua->fetch_assoc()):
                                 $img_mua = !empty($row_mua['HinhAnh']) ? "uploads/" . $row_mua['HinhAnh'] : "uploads/no-image.jpg";
+                                
+                                // LOGIC KIỂM TRA QUYỀN ĐỔI TRẢ
+                                $duocDoiTra = true;
+                                // Nếu ID trả góp tồn tại VÀ tình trạng chưa phải là "Đã tất toán"
+                                if (!empty($row_mua['TraGopID']) && $row_mua['TinhTrangTra'] !== 'Đã tất toán') {
+                                    $duocDoiTra = false;
+                                }
                         ?>
                             <tr>
                                 <td><img src="<?php echo $img_mua; ?>" width="80" class="img-fluid rounded border" alt="Tivi"></td>
@@ -394,14 +406,20 @@ switch ($loc_gia_noibat) {
                                 <td><?php echo date('d/m/Y', strtotime($row_mua['NgayLap'])); ?></td>
                                 <td class="fw-bold"><?php echo (int)$row_mua['SoLuongBan']; ?></td>
                                 <td>
-                                    <div class="d-flex gap-2 justify-content-center">
-                                        <a href="doitra_yeucau.php?hd_id=<?php echo $row_mua['HoaDonID']; ?>&sp_id=<?php echo $row_mua['SanPhamID']; ?>&action=doi" class="btn btn-sm btn-warning fw-bold text-dark shadow-sm">
-                                            <i class="bi bi-arrow-left-right"></i> Đổi hàng
-                                        </a>
-                                        <a href="doitra_yeucau.php?hd_id=<?php echo $row_mua['HoaDonID']; ?>&sp_id=<?php echo $row_mua['SanPhamID']; ?>&action=tra" class="btn btn-sm btn-danger fw-bold shadow-sm">
-                                            <i class="bi bi-arrow-return-left"></i> Trả hàng
-                                        </a>
-                                    </div>
+                                    <?php if ($duocDoiTra): ?>
+                                        <div class="d-flex gap-2 justify-content-center">
+                                            <a href="doitra_yeucau.php?hd_id=<?php echo $row_mua['HoaDonID']; ?>&sp_id=<?php echo $row_mua['SanPhamID']; ?>&action=doi" class="btn btn-sm btn-warning fw-bold text-dark shadow-sm">
+                                                <i class="bi bi-arrow-left-right"></i> Đổi hàng
+                                            </a>
+                                            <a href="doitra_yeucau.php?hd_id=<?php echo $row_mua['HoaDonID']; ?>&sp_id=<?php echo $row_mua['SanPhamID']; ?>&action=tra" class="btn btn-sm btn-danger fw-bold shadow-sm">
+                                                <i class="bi bi-arrow-return-left"></i> Trả hàng
+                                            </a>
+                                        </div>
+                                    <?php else: ?>
+                                        <span class="badge bg-secondary px-3 py-2 shadow-sm" title="Bạn cần thanh toán hết các kỳ trả góp trước khi đổi/trả sản phẩm này.">
+                                            <i class="bi bi-lock-fill me-1"></i> Chưa tất toán trả góp
+                                        </span>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php

@@ -17,6 +17,23 @@ if (!isset($_SESSION['khach_hang_id']) && !isset($_SESSION['khachhang_id'])) {
 
 $khachHangID = (int)($_SESSION['khach_hang_id'] ?? $_SESSION['khachhang_id']);
 
+// ========================================================
+// --- BƯỚC 1: KIỂM TRA TÀI KHOẢN CÓ BỊ NỢ XẤU KHÔNG ---
+// ========================================================
+$isNoXau = false;
+$sql_check_noxau = "SELECT ID FROM tragop WHERE KhachHangID = ? AND TinhTrangTra = 'Nợ xấu' LIMIT 1";
+$stmt_nx = $conn->prepare($sql_check_noxau);
+$stmt_nx->bind_param("i", $khachHangID);
+$stmt_nx->execute();
+$res_nx = $stmt_nx->get_result();
+
+if ($res_nx && $res_nx->num_rows > 0) {
+    $isNoXau = true; // Bật cờ khóa tài khoản
+}
+$stmt_nx->close();
+// ========================================================
+
+
 $thongBao = '';
 $datHangThanhCong = false;
 $tongTienGioHang = 0;
@@ -49,6 +66,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $ngayLap = date('Y-m-d H:i:s');
     $ghiChu = isset($_POST['GhiChuHoaDon']) ? trim($_POST['GhiChuHoaDon']) : '';
     $hinhThucThanhToan = isset($_POST['HinhThucThanhToan']) ? trim($_POST['HinhThucThanhToan']) : 'thanhtoanhet';
+
+    // ========================================================
+    // --- BƯỚC 3: CHẶN BACKEND NẾU CỐ TÌNH HACK HTML ---
+    // ========================================================
+    if ($hinhThucThanhToan === 'tragop' && $isNoXau == true) {
+        echo "<script>alert('Lỗi: Tài khoản của bạn đang có nợ xấu. Hệ thống từ chối tạo hồ sơ trả góp mới!'); window.history.back();</script>";
+        exit();
+    }
+    // ========================================================
 
     $conn->begin_transaction();
 
@@ -269,11 +295,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta charset="UTF-8">
     <title>Thanh Toán - TIVI STORE</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <script>
         function toggleTraGopBox() {
             const traGop = document.getElementById('tragop');
             const boxTraGop = document.getElementById('boxTraGop');
-            boxTraGop.style.display = traGop.checked ? 'block' : 'none';
+            // Kiểm tra xem phần tử có tồn tại không trước khi xử lý (Phòng trường hợp bị disabled)
+            if(traGop && boxTraGop) {
+                boxTraGop.style.display = traGop.checked ? 'block' : 'none';
+            }
         }
     </script>
 </head>
@@ -309,20 +339,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Hình thức thanh toán</label>
 
-                                <div class="form-check">
+                                <div class="form-check mb-2">
                                     <input class="form-check-input" type="radio" name="HinhThucThanhToan" id="thanhtoanhet" value="thanhtoanhet" checked onclick="toggleTraGopBox()">
                                     <label class="form-check-label" for="thanhtoanhet">
-                                        Thanh toán hết
+                                        Thanh toán hết (Tiền mặt / Chuyển khoản)
                                     </label>
                                 </div>
 
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="HinhThucThanhToan" id="tragop" value="tragop" onclick="toggleTraGopBox()">
-                                    <label class="form-check-label" for="tragop">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" name="HinhThucThanhToan" id="tragop" value="tragop" onclick="toggleTraGopBox()" <?php echo $isNoXau ? 'disabled' : ''; ?>>
+                                    <label class="form-check-label <?php echo $isNoXau ? 'text-muted' : ''; ?>" for="tragop">
                                         Mua trả góp
+                                        <?php if ($isNoXau): ?>
+                                            <span class="badge bg-danger ms-2"><i class="bi bi-lock-fill"></i> Bị khóa do có nợ xấu</span>
+                                            <div class="small text-danger mt-1 fw-normal" style="font-size: 0.85rem;">Bạn cần thanh toán dứt điểm các hồ sơ nợ xấu trước khi sử dụng lại tính năng này.</div>
+                                        <?php endif; ?>
                                     </label>
                                 </div>
-                            </div>
+                                </div>
 
                             <div id="boxTraGop" style="display:none;">
                                 <div class="border rounded p-3 mb-3 bg-light">

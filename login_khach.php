@@ -107,51 +107,132 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Đăng nhập Khách hàng - TIVI STORE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập Khách Hàng - Tivi N&U</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        body { 
+            background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            padding: 40px;
+            width: 100%;
+            max-width: 450px;
+            animation: fadeIn 0.6s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .brand-icon {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #ff416c, #ff4b2b);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin: 0 auto 20px;
+            box-shadow: 0 5px 15px rgba(255, 75, 43, 0.3);
+        }
+        .form-control {
+            border-radius: 10px;
+            padding: 12px 15px;
+            border: 1px solid #ced4da;
+        }
+        .form-control:focus {
+            border-color: #ff4b2b;
+            box-shadow: 0 0 0 0.2rem rgba(255, 75, 43, 0.25);
+        }
+        .btn-login {
+            border-radius: 10px;
+            padding: 12px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #ff416c, #ff4b2b);
+            border: none;
+            color: white;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 75, 43, 0.4);
+            color: white;
+        }
+        .btn-back {
+            border-radius: 10px;
+            padding: 12px;
+            font-weight: 600;
+            border: 2px solid #dee2e6;
+            color: #6c757d;
+            transition: all 0.2s;
+        }
+        .btn-back:hover {
+            background-color: #f8f9fa;
+            border-color: #c1c9d0;
+            color: #495057;
+        }
+    </style>
 </head>
-<body class="bg-light">
+<body>
 
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-5">
-            <div class="card shadow border-0">
-                <div class="card-header bg-primary text-white text-center py-3">
-                    <h4 class="mb-0"><i class="bi bi-person-circle"></i> Đăng Nhập Khách Hàng</h4>
-                </div>
-                <div class="card-body p-4">
+<div class="container d-flex justify-content-center">
+    <div class="login-card">
+        <div class="brand-icon">
+            <i class="bi bi-person-heart"></i>
+        </div>
+        <h3 class="text-center mb-1 fw-bold text-danger">ĐĂNG NHẬP</h3>
+        <p class="text-center text-muted mb-4 small">Mở khóa nhiều ưu đãi từ N&U</p>
 
-                    <?php if ($thongBao != ''): ?>
-                        <div class="alert alert-<?php echo $loaiThongBao; ?> text-center">
-                            <?php echo $thongBao; ?>
-                        </div>
-                    <?php endif; ?>
+        <?php if ($thongBao != ''): ?>
+            <div class="alert alert-<?php echo $loaiThongBao; ?> text-center rounded-3 py-2">
+                <?php echo $loaiThongBao == 'danger' ? '<i class="bi bi-exclamation-triangle-fill"></i>' : '<i class="bi bi-check-circle-fill"></i>'; ?> 
+                <?php echo $thongBao; ?>
+            </div>
+        <?php endif; ?>
 
-                    <form action="" method="POST">
-                        <div class="mb-3">
-                            <label class="form-label text-muted fw-bold">Tên đăng nhập</label>
-                            <input type="text" name="TenDangNhap" class="form-control" required placeholder="Nhập tên đăng nhập...">
-                        </div>
-                        <div class="mb-4">
-                            <label class="form-label text-muted fw-bold">Mật khẩu</label>
-                            <input type="password" name="MatKhau" class="form-control" required placeholder="Nhập mật khẩu...">
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100 fw-bold fs-5">ĐĂNG NHẬP</button>
-                    </form>
-
-                    <div class="mt-4 text-center">
-                        <p class="mb-1">Chưa có tài khoản?</p>
-                        <a href="dang_ky.php" class="btn btn-outline-secondary w-100">Đăng ký ngay</a>
-                    </div>
-
-                    <div class="text-center mt-3">
-                        <a href="trang_chu.php" class="text-decoration-none text-muted"><i class="bi bi-arrow-left"></i> Về trang chủ</a>
-                    </div>
-
+        <form method="POST" action="">
+            <div class="mb-3">
+                <label for="TenDangNhap" class="form-label fw-bold text-secondary small">TÊN ĐĂNG NHẬP</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0 text-muted rounded-start-3"><i class="bi bi-person-fill"></i></span>
+                    <input type="text" class="form-control border-start-0 rounded-end-3" id="TenDangNhap" name="TenDangNhap" required placeholder="Nhập tên đăng nhập...">
                 </div>
             </div>
-        </div>
+            
+            <div class="mb-4">
+                <label for="MatKhau" class="form-label fw-bold text-secondary small">MẬT KHẨU</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0 text-muted rounded-start-3"><i class="bi bi-key-fill"></i></span>
+                    <input type="password" class="form-control border-start-0 rounded-end-3" id="MatKhau" name="MatKhau" required placeholder="Nhập mật khẩu...">
+                </div>
+            </div>
+
+            <div class="d-grid gap-3">
+                <button type="submit" class="btn btn-login text-uppercase">
+                    Đăng Nhập <i class="bi bi-box-arrow-in-right ms-1"></i>
+                </button>
+                <a href="trang_chu.php" class="btn btn-back text-center text-decoration-none">
+                    <i class="bi bi-house-door-fill me-1"></i> Trở về Trang chủ
+                </a>
+            </div>
+            
+            <div class="text-center mt-4">
+                <span class="text-muted small">Chưa có tài khoản?</span> 
+                <a href="dang_ky.php" class="text-danger fw-bold text-decoration-none">Đăng ký ngay</a>
+            </div>
+        </form>
     </div>
 </div>
 
