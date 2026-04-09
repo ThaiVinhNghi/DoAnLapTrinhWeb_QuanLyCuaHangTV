@@ -25,6 +25,11 @@ $duocPhepXuLyPhucTap = ($isAdmin || $isNhanVienCu);
         <a href="khach_hang.php" class="list-group-item list-group-item-action">
             <i class="bi bi-people"></i> Quản lý Khách hàng
         </a>
+
+        <a href="bai_viet.php" class="list-group-item list-group-item-action">
+            <i class="bi bi-newspaper me-2 text-info"></i> Quản lý Tin tức
+        </a>        
+
         <a href="bao_hanh.php" class="list-group-item list-group-item-action">
             <i class="bi bi-shield-check me-2"></i> Quản lý Bảo hành
         </a>
