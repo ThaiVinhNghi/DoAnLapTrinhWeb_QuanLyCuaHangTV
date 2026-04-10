@@ -1,7 +1,7 @@
 <?php
 session_start();
-require_once 'connect.php';
-require_once 'nhatky_helper.php';
+require_once 'thu_vien/connect.php';
+require_once 'thu_vien/nhatky_helper.php';
 
 // 1. Kiểm tra giỏ hàng
 if (!isset($_SESSION['gio_hang']) || empty($_SESSION['gio_hang'])) {
@@ -293,9 +293,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Thanh Toán - TIVI STORE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thanh Toán - N&U Store</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="tai_nguyen/css/style.css">
     <script>
         function toggleTraGopBox() {
             const traGop = document.getElementById('tragop');
@@ -307,10 +309,29 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     </script>
 </head>
-<body class="bg-light" onload="toggleTraGopBox()">
+<body onload="toggleTraGopBox()">
 
-<div class="container mt-5" style="max-width: 900px;">
-    <h2 class="mb-4 text-center text-primary fw-bold">Xác Nhận Đặt Hàng</h2>
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-premium sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold fs-4 text-white" href="trang_chu.php"><i class="bi bi-tv text-danger"></i> N&U</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav mx-auto">
+                    <li class="nav-item"><a class="nav-link" href="trang_chu.php">Khám Phá</a></li>
+                    <li class="nav-item"><a class="nav-link" href="san_pham.php">Sản Phẩm</a></li>
+                    <li class="nav-item"><a class="nav-link" href="trang_chu.php#tin-tuc">Tin Tức</a></li>
+                </ul>
+                <div class="d-flex align-items-center gap-3">
+                    <a href="gio_hang.php" class="text-white text-decoration-none fw-bold"><i class="bi bi-bag"></i> Giỏ hàng</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+<div class="container mt-5" style="max-width: 1100px;">
+    <h2 class="premium-section-title">Xác Nhận Đặt Hàng</h2>
 
     <?php if ($thongBao != ''): ?>
         <div class="alert alert-<?php echo $datHangThanhCong ? 'success' : 'danger'; ?> text-center fs-5 shadow-sm border-0">
@@ -405,6 +426,36 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             <span>Số loại sản phẩm:</span>
                             <span class="fw-bold"><?php echo count($_SESSION['gio_hang']); ?></span>
                         </p>
+
+                        <ul class="list-group mb-3">
+                            <?php
+                            foreach ($_SESSION['gio_hang'] as $id_sp => $so_luong) {
+                                $id_sp = (int)$id_sp;
+                                $sql_item = "SELECT TenSanPham, HinhAnh, DonGia, PhanTramGiam FROM sanpham WHERE ID = ?";
+                                $stmt_item = $conn->prepare($sql_item);
+                                $stmt_item->bind_param("i", $id_sp);
+                                $stmt_item->execute();
+                                $res_item = $stmt_item->get_result();
+                                if ($row_item = $res_item->fetch_assoc()) {
+                                    $hinh = !empty($row_item['HinhAnh']) ? 'uploads/'.$row_item['HinhAnh'] : 'uploads/no-image.jpg';
+                                    $giaGoc = (float)$row_item['DonGia'];
+                                    $phanTram = isset($row_item['PhanTramGiam']) ? (float)$row_item['PhanTramGiam'] : 0;
+                                    $gia = $giaGoc - ($giaGoc * $phanTram / 100);
+                                    $subtotal = $gia * (int)$so_luong;
+                                    echo '<li class="list-group-item d-flex gap-3 align-items-center">'
+                                        . '<img src="'.$hinh.'" alt="" width="60" class="rounded">'
+                                        . '<div class="flex-grow-1">'
+                                            . '<div class="fw-bold">'.htmlspecialchars($row_item['TenSanPham']).'</div>'
+                                            . '<div class="small text-muted">Số lượng: '.(int)$so_luong.' • Giá: '.number_format($gia,0,',','.').' đ</div>'
+                                        . '</div>'
+                                        . '<div class="text-end fw-bold text-danger">'.number_format($subtotal,0,',','.').' đ</div>'
+                                    . '</li>';
+                                }
+                                $stmt_item->close();
+                            }
+                            ?>
+                        </ul>
+
                         <hr>
                         <div class="d-flex justify-content-between align-items-center bg-light p-3 rounded">
                             <span class="fs-5 fw-bold">Tổng thanh toán:</span>

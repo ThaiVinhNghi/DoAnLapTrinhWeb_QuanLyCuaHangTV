@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'connect.php';
+require_once 'thu_vien/connect.php';
 
 // Lấy từ khóa người dùng nhập vào
 $tuKhoa = isset($_GET['tukhoa']) ? trim($_GET['tukhoa']) : '';
@@ -13,12 +13,7 @@ $tuKhoa = isset($_GET['tukhoa']) ? trim($_GET['tukhoa']) : '';
     <title>Tìm kiếm: <?php echo htmlspecialchars($tuKhoa); ?> - TIVI STORE</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <style>
-        body { background-color: #f8f9fa; }
-        .product-card { transition: transform 0.3s, box-shadow 0.3s; border-radius: 15px; overflow: hidden; }
-        .product-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
-        .product-img { height: 200px; object-fit: contain; width: 100%; background-color: #fff; }
-    </style>
+    <link rel="stylesheet" href="tai_nguyen/css/style.css">
 </head>
 <body>
 

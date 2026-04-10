@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once '../connect.php';
+require_once '../thu_vien/connect.php';
 
 // Truy vấn dữ liệu cho 3 bảng
 $sql_hsx = "SELECT * FROM hangsanxuat ORDER BY ID DESC";

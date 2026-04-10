@@ -6,7 +6,7 @@ if (!isset($_SESSION['nhanvien_id'])) {
     exit();
 }
 // Lùi ra ngoài để gọi file connect
-require_once '../connect.php';
+require_once '../thu_vien/connect.php';
 
 $thongBao = '';
 

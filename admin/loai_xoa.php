@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once '../connect.php';
+require_once '../thu_vien/connect.php';
 $id = isset($_GET['id']) ? $_GET['id'] : 0;
 if ($id > 0) {
     $sql = "DELETE FROM loaisanpham WHERE ID = ?";

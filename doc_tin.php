@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'connect.php';
+require_once 'thu_vien/connect.php';
 
 // Lấy ID bài viết từ URL
 $id_bai = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -37,26 +37,8 @@ $img_cover = !empty($bai['HinhAnh']) ? "uploads/" . $bai['HinhAnh'] : "uploads/n
     <title><?php echo htmlspecialchars($bai['TieuDe']); ?> - Siêu Thị Tivi N&U</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="style.css">
-    <style>
-        /* Làm đẹp phần nội dung bài viết */
-        .article-content {
-            font-size: 1.1rem;
-            line-height: 1.8;
-            color: #333;
-        }
-        .article-content img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 8px;
-            margin: 15px 0;
-        }
-        .article-header {
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #dee2e6;
-        }
-    </style>
+    <link rel="stylesheet" href="tai_nguyen/css/style.css">
+    <!-- article styles moved to style.css -->
 </head>
 <body class="bg-light">
 

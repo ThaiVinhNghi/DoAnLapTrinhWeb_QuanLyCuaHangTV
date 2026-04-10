@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once '../connect.php';
+require_once '../thu_vien/connect.php';
 
 // Lấy ID hóa đơn từ thanh địa chỉ (URL)
 $id_hoadon = isset($_GET['id']) ? (int)$_GET['id'] : 0;

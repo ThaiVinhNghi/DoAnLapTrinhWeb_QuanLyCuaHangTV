@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once '../connect.php';
+require_once '../thu_vien/connect.php';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $ten = trim($_POST['TenNhaCungCap']);

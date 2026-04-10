@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once '../connect.php';
+require_once '../thu_vien/connect.php';
 
 // Kiểm tra quyền: Chỉ Admin (QuyenHan = 1) mới được vào trang này
 if (!isset($_SESSION['quyen_han']) || $_SESSION['quyen_han'] != 1) {

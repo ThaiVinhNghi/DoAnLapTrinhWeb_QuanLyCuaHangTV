@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once '../connect.php';
+require_once '../thu_vien/connect.php';
 
 // Truy vấn lấy danh sách khách hàng
 $sql = "SELECT * FROM khachhang ORDER BY ID DESC";

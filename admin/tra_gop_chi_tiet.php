@@ -1,7 +1,7 @@
 <?php
 session_start();
-require_once '../connect.php';
-require_once '../nhatky_helper.php'; // Gọi file chứa hàm ghi nhật ký
+require_once '../thu_vien/connect.php';
+require_once '../thu_vien/nhatky_helper.php'; // Gọi file chứa hàm ghi nhật ký
 
 $id_tragop = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 

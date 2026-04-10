@@ -6,7 +6,7 @@ if (!isset($_SESSION['nhanvien_id'])) {
     exit();
 }
 
-require_once '../connect.php';
+require_once '../thu_vien/connect.php';
 
 // Kiểm tra xem có nhận được ID từ trên thanh URL (phương thức GET) không
 if (isset($_GET['id'])) {

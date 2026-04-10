@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once '../connect.php';
+require_once '../thu_vien/connect.php';
 
 // Bảo mật: Chỉ admin mới được sửa
 if (!isset($_SESSION['quyen_han']) || $_SESSION['quyen_han'] != 1) {

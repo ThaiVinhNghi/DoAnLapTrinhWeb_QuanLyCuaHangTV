@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once '../connect.php';
+require_once '../thu_vien/connect.php';
 
 // 1. Chưa đăng nhập thì mới cho về login
 if (!isset($_SESSION['nhanvien_id']) && !isset($_SESSION['nhan_vien_id'])) {

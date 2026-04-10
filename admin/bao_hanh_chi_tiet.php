@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once '../connect.php';
+require_once '../thu_vien/connect.php';
 
 $hoaDonID = isset($_GET['hoadon_id']) ? (int)$_GET['hoadon_id'] : 0;
 $sanPhamID = isset($_GET['sanpham_id']) ? (int)$_GET['sanpham_id'] : 0;

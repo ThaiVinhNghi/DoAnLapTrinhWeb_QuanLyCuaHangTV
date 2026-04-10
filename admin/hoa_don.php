@@ -1,7 +1,7 @@
 <?php
 session_start();
 // Gọi file kết nối CSDL từ thư mục gốc
-require_once '../connect.php';
+require_once '../thu_vien/connect.php';
 
 // Câu lệnh SQL nối 2 bảng hoadon và khachhang để lấy thông tin người đặt
 $sql = "SELECT h.ID, k.HoVaTen, k.DienThoai, h.NgayLap, h.NhanVienID, h.GhiChuHoaDon 

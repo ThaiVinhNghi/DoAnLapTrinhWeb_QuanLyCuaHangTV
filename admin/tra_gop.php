@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once '../connect.php';
+require_once '../thu_vien/connect.php';
 
 // Gọi giao diện Header và Sidebar
 require_once 'header.php';

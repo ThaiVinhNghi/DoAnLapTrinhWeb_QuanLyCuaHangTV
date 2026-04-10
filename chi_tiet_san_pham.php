@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'connect.php';
+require_once 'thu_vien/connect.php';
 
 // Kiểm tra xem có truyền ID sản phẩm không
 if (!isset($_GET['id'])) {

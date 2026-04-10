@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once '../connect.php'; // Đảm bảo đường dẫn file connect đúng
+require_once '../thu_vien/connect.php'; // Đảm bảo đường dẫn file connect đúng
 
 // Xử lý khi Admin bấm nút Cập nhật khuyến mãi
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['cap_nhat_km'])) {

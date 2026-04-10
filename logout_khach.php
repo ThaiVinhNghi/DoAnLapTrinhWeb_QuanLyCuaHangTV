@@ -1,7 +1,7 @@
 <?php
 session_start();
-require_once 'connect.php';
-require_once 'nhatky_helper.php';
+require_once 'thu_vien/connect.php';
+require_once 'thu_vien/nhatky_helper.php';
 
 if (isset($_SESSION['khach_hang_id']) || isset($_SESSION['khachhang_id'])) {
     ghiNhatKyKhachHangTuSession(

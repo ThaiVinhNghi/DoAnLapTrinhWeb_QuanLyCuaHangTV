@@ -1,31 +1,42 @@
 <?php
 session_start();
-require_once 'connect.php';
+require_once 'thu_vien/connect.php';
 ?>
 
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Giỏ hàng của bạn - TIVI STORE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giỏ hàng của bạn - N&U Store</title>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="tai_nguyen/css/style.css">
 </head>
-<body class="bg-light">
+<body>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top shadow">
-    <div class="container">
-        <a class="navbar-brand fw-bold" href="trang_chu.php"><i class="bi bi-tv"></i> TIVI STORE</a>
-        <div class="collapse navbar-collapse">
-            <ul class="navbar-nav me-auto">
-                <li class="nav-item"><a class="nav-link" href="trang_chu.php">Trang Chủ</a></li>
-            </ul>
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-premium sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold fs-4 text-white" href="trang_chu.php"><i class="bi bi-tv text-danger"></i> N&U</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav mx-auto">
+                    <li class="nav-item"><a class="nav-link" href="trang_chu.php">Khám Phá</a></li>
+                    <li class="nav-item"><a class="nav-link" href="san_pham.php">Sản Phẩm</a></li>
+                    <li class="nav-item"><a class="nav-link" href="trang_chu.php#tin-tuc">Tin Tức</a></li>
+                </ul>
+                <div class="d-flex align-items-center gap-3">
+                    <a href="trang_chu.php" class="btn btn-outline-light btn-pill">Tiếp tục mua sắm</a>
+                </div>
+            </div>
         </div>
-    </div>
-</nav>
+    </nav>
 
-<div class="container mt-5 mb-5">
-    <h3 class="mb-4 text-primary fw-bold"><i class="bi bi-cart3"></i> Giỏ Hàng Của Bạn</h3>
+    <div class="container mt-5 mb-5">
+        <h2 class="premium-section-title">Giỏ Hàng Của Bạn</h2>
 
     <?php
     // Kiểm tra xem giỏ hàng có tồn tại và có sản phẩm nào không
@@ -105,7 +116,10 @@ require_once 'connect.php';
                 </div>
             </div>
             <div class="card-footer bg-white p-4 d-flex justify-content-between align-items-center">
-                <a href="trang_chu.php" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Tiếp tục mua hàng</a>
+                <div>
+                    <a href="trang_chu.php" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Tiếp tục mua hàng</a>
+                    <a href="xoa_gio_hang.php?clear=1" onclick="return confirm('Bạn có chắc muốn xóa toàn bộ giỏ hàng?');" class="btn btn-outline-danger ms-2"><i class="bi bi-trash"></i> Xóa giỏ hàng của tôi</a>
+                </div>
                 <div class="text-end">
                     <span class="text-muted">Tổng thanh toán:</span>
                     <h2 class="text-danger fw-bold mb-0"><?php echo number_format($tongTien, 0, ',', '.'); ?> VNĐ</h2>
@@ -116,5 +130,6 @@ require_once 'connect.php';
     <?php } ?>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

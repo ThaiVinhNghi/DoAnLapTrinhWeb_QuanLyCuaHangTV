@@ -1,7 +1,7 @@
 <?php
 session_start();
-require_once '../connect.php';
-require_once '../nhatky_helper.php';
+require_once '../thu_vien/connect.php';
+require_once '../thu_vien/nhatky_helper.php';
 
 // Ghi nhật ký trước khi xóa session
 if (isset($_SESSION['nhanvien_id'])) {

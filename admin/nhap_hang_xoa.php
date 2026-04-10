@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once '../connect.php';
+require_once '../thu_vien/connect.php';
 
 // Kiểm tra đăng nhập
 if (!isset($_SESSION['nhanvien_id'])) {

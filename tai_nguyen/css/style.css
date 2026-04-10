@@ -1,0 +1,182 @@
+/* =========================================
+   GIAO DIỆN PREMIUM - STYLE.CSS (N&U STORE)
+   - Đã gộp các selector trùng lặp và sắp xếp theo module
+   - Các style chuyên biệt theo trang được để ở cuối từng mục
+   ========================================= */
+
+/* ---------- IMPORT & BASE ---------- */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+
+html { scroll-behavior: smooth; }
+
+/* Base site */
+body { font-family: 'Inter', sans-serif; background-color: #f8f9fa; }
+
+/* Utilities */
+.letter-spacing-1 { letter-spacing: 1px; }
+
+/* ---------- NAVBAR & MENU ---------- */
+.navbar-premium {
+    background-color: rgba(10, 10, 10, 0.95) !important;
+    backdrop-filter: blur(10px);
+    padding: 15px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.navbar-premium .nav-link {
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: rgba(255,255,255,0.7) !important;
+    transition: color 0.3s;
+}
+.navbar-premium .nav-link:hover,
+.navbar-premium .nav-link.active { color: #fff !important; }
+
+/* ---------- HERO / BANNER ---------- */
+.hero-banner .carousel-item { height: 85vh; min-height: 500px; }
+.hero-bg-1 { background: radial-gradient(circle at center, #2b2b2b 0%, #000000 100%); }
+.hero-bg-2 { background: radial-gradient(circle at right, #1a2a6c, #11212b, #000000); }
+.hero-content { position: absolute; top: 50%; left: 10%; transform: translateY(-50%); text-align: left; max-width: 600px; z-index: 2; }
+.hero-title { font-size: 3.5rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 20px; line-height: 1.2; }
+.hero-control { width: 48px; height: 48px; border-radius: 50%; background: rgba(0,0,0,0.55); border: none; color: #fff; display: flex; align-items: center; justify-content: center; z-index: 5; box-shadow: 0 6px 16px rgba(0,0,0,0.3); transition: transform 0.15s ease, background 0.15s ease; }
+.hero-control:hover { transform: scale(1.06); background: rgba(0,0,0,0.75); }
+
+.premium-section-title { text-align: center; font-size: 2.5rem; font-weight: 800; color: #111; margin-bottom: 3rem; letter-spacing: -0.5px; }
+
+/* ---------- CARDS / GRID ---------- */
+.premium-card { border: none !important; border-radius: 16px; overflow: hidden; background: #fff; transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1), box-shadow 0.4s cubic-bezier(0.165, 0.84, 0.44, 1); }
+.premium-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,0.08) !important; }
+.premium-card > .overflow-hidden img { transition: transform 0.6s ease; }
+.premium-card:hover > .overflow-hidden img { transform: scale(1.05); }
+
+.img-zoom-wrapper { overflow: hidden; padding: 1.5rem; }
+.img-zoom-wrapper img { transition: transform 0.6s ease; }
+.premium-card:hover .img-zoom-wrapper img { transform: scale(1.08); }
+
+.badge-premium { font-weight: 800; letter-spacing: 1px; padding: 8px 12px; border-radius: 8px; }
+
+/* ---------- BUTTONS & FILTERS ---------- */
+.btn-pill { border-radius: 50px; padding: 10px 24px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; font-size: 0.85rem; transition: all 0.3s ease; }
+
+.filter-bar { background: #fff; border-radius: 50px; padding: 15px 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); margin-top: -40px; position: relative; z-index: 10; }
+.filter-bar select { border: none; background: #f1f3f5; border-radius: 30px; font-weight: 600; color: #333; cursor: pointer; height: 40px; }
+.filter-bar select:focus { box-shadow: none; background: #e9ecef; }
+
+/* Button variants used across pages */
+.btn-back { border-radius: 10px; padding: 12px; font-weight: 600; border: 2px solid #dee2e6; color: #6c757d; transition: all 0.2s; }
+.btn-back:hover { background-color: #f8f9fa; border-color: #c1c9d0; color: #495057; }
+
+/* ---------- FORMS (base) ---------- */
+.form-control { border-radius: 10px; padding: 12px 15px; border: 1px solid #ced4da; }
+
+/* ---------- CHAT FLOAT ---------- */
+.nút-chat-nổi { position: fixed; bottom: 30px; right: 30px; background-color: #0068FF; width: 60px; height: 60px; border-radius: 50%; box-shadow: 0px 4px 15px rgba(0, 104, 255, 0.4); display: flex; justify-content: center; align-items: center; z-index: 9999; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.nút-chat-nổi:hover { transform: scale(1.15); }
+
+/* ---------- ADMIN LAYOUT ---------- */
+.admin-navbar { background-color: #000000; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 12px 0; }
+.admin-sidebar-wrapper { background-color: #0f0f11; border-right: 1px solid rgba(0,0,0,0.1); }
+@media (min-width:768px) { .admin-sidebar-wrapper { min-height: calc(100vh - 60px); padding-top: 20px; } }
+.sidebar-heading { color: rgba(255,255,255,0.4); font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; margin: 20px 20px 10px 20px; }
+.sidebar-link { color: rgba(255,255,255,0.7); text-decoration: none; padding: 12px 20px; margin: 0 12px 5px 12px; border-radius: 8px; display: flex; align-items: center; font-weight: 500; font-size: 0.95rem; transition: all 0.3s ease; }
+.sidebar-link i { font-size: 1.1rem; width: 30px; transition: transform 0.3s ease; }
+.sidebar-link:hover, .sidebar-link.active { background-color: rgba(255,255,255,0.1); color: #fff; }
+.sidebar-link:hover i { transform: translateX(3px); }
+.sidebar-link.locked { color: rgba(255,255,255,0.3); background-color: transparent; cursor: not-allowed; }
+.sidebar-link.locked:hover { background-color: rgba(255,0,0,0.05); color: #ff4d4f; }
+
+.main-content { padding: 30px; }
+
+/* ---------- ANIMATIONS ---------- */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+
+/* =========================================
+   PAGE-SPECIFIC OVERRIDES (kept in original order)
+   - đặt phía sau các quy tắc base để override an toàn
+   ========================================= */
+
+/* --- Trang sản phẩm --- */
+.page-header-premium { background: radial-gradient(circle at center, #2b2b2b 0%, #000000 100%); padding: 80px 0 100px 0; color: white; text-align: center; }
+.page-title { font-size: 3rem; font-weight: 800; letter-spacing: -1px; }
+
+/* --- Danh gia (stars) --- */
+.star-rating { display: flex; flex-direction: row-reverse; justify-content: center; gap: 10px; }
+.star-rating input[type="radio"] { display: none; }
+.star-rating label { font-size: 2.5rem; color: #ddd; cursor: pointer; transition: color 0.2s ease-in-out; }
+.star-rating label:hover, .star-rating label:hover ~ label, .star-rating input[type="radio"]:checked ~ label { color: #ffc107; }
+.premium-card.pd-variant { border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.08); }
+
+/* --- Header / Admin extras (override fonts) --- */
+body.admin-area { font-family: 'Inter', sans-serif; background-color: #f4f6f8; overflow-x: hidden; }
+
+.login-card { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); padding: 40px; width: 100%; max-width: 450px; animation: fadeIn 0.6s ease-in-out; }
+.brand-icon { width: 70px; height: 70px; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.15); }
+.btn-login { border-radius: 10px; padding: 12px; font-weight: bold; border: none; color: white; transition: transform 0.2s, box-shadow 0.2s; }
+
+/* admin login gradient */
+body.login-admin { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); display:flex; align-items:center; justify-content:center; min-height:100vh; }
+body.login-admin .brand-icon { background: linear-gradient(135deg, #1e3c72, #2a5298); box-shadow: 0 5px 15px rgba(30,60,114,0.3); }
+body.login-admin .form-control:focus { border-color: #2a5298; box-shadow: 0 0 0 0.2rem rgba(42,82,152,0.25); }
+body.login-admin .btn-login { background: linear-gradient(135deg, #1e3c72, #2a5298); }
+body.login-admin .btn-login:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(30,60,114,0.4); }
+
+/* --- Login khách hàng (gradient variant) --- */
+body.login-customer { background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); display:flex; align-items:center; justify-content:center; min-height:100vh; }
+body.login-customer .brand-icon { background: linear-gradient(135deg, #ff416c, #ff4b2b); box-shadow: 0 5px 15px rgba(255,75,43,0.3); }
+body.login-customer .form-control:focus { border-color: #ff4b2b; box-shadow: 0 0 0 0.2rem rgba(255,75,43,0.25); }
+body.login-customer .btn-login { background: linear-gradient(135deg, #ff416c, #ff4b2b); }
+body.login-customer .btn-login:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255,75,43,0.4); }
+
+/* --- Đăng ký (slightly larger card) --- */
+body.register-page { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); display:flex; align-items:center; justify-content:center; min-height:100vh; padding:2rem 1rem; }
+body.register-page .login-card { max-width: 500px; }
+body.register-page .brand-icon { background: linear-gradient(135deg, #1e3c72, #2a5298); box-shadow: 0 5px 15px rgba(30,60,114,0.3); }
+body.register-page .form-control:focus { border-color: #2a5298; box-shadow: 0 0 0 0.2rem rgba(42,82,152,0.25); }
+body.register-page .btn-login { background: linear-gradient(135deg, #1e3c72, #2a5298); }
+
+/* --- Search results / product cards --- */
+body.search-page { background-color: #f8f9fa; }
+.product-card { transition: transform 0.3s, box-shadow 0.3s; border-radius: 15px; overflow: hidden; }
+.product-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
+.product-img { height: 200px; object-fit: contain; width: 100%; background-color: #fff; }
+
+/* --- Article / blog --- */
+.article-content { font-size: 1.1rem; line-height: 1.8; color: #333; }
+.article-content img { max-width: 100%; height: auto; border-radius: 8px; margin: 15px 0; }
+.article-header { margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #dee2e6; }
+
+/* ---------- INVOICE & WARRANTY PRINTABLES ---------- */
+body.invoice-print, body.warranty-print { font-family: Arial, Helvetica, sans-serif; background: #f2f2f2; margin: 0; padding: 20px; color: #222; }
+.invoice-box, .card-box { width: 900px; max-width: 100%; margin: auto; background: #fff; padding: 30px 35px; border-radius: 10px; box-shadow: 0 0 15px rgba(0,0,0,0.08); }
+.card-box { width: 1000px; }
+.top { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ddd; padding-bottom: 15px; margin-bottom: 25px; }
+.company { display: flex; align-items: center; gap: 18px; }
+.company img { width: 110px; height: 110px; object-fit: contain; }
+.company-info h2 { margin: 0 0 8px; color: #0d3b8e; font-size: 28px; }
+.company-info p { margin: 4px 0; font-size: 16px; }
+.title { text-align: center; color: #d61f2c; font-size: 40px; font-weight: bold; margin: 10px 0 25px; text-transform: uppercase; }
+.meta { text-align: right; font-size: 18px; margin-bottom: 30px; font-weight: bold; color: #16325c; }
+.section-title { color: #d61f2c; font-size: 28px; font-weight: bold; margin: 25px 0 12px; border-bottom: 2px solid #eee; padding-bottom: 8px; }
+.info p { margin: 8px 0; font-size: 18px; line-height: 1.6; }
+table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+table th, table td { border: 1px solid #d9d9d9; padding: 12px 10px; font-size: 17px; }
+table th { background: #f5f7fb; text-align: center; color: #10284f; }
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-red { color: #d61f2c; font-weight: bold; }
+.tong-cong { margin-top: 18px; text-align: right; font-size: 22px; font-weight: bold; }
+.tong-cong span { color: #d61f2c; font-size: 26px; }
+.ghi-chu { margin-top: 25px; font-size: 18px; line-height: 1.6; }
+.sign { display: flex; justify-content: space-between; margin-top: 60px; text-align: center; }
+.sign-box { width: 42%; font-size: 18px; }
+.sign-box strong { display: block; margin-bottom: 50px; font-size: 20px; }
+.screen-buttons { width: 900px; max-width: 100%; margin: 0 auto 15px; text-align: right; }
+.screen-buttons .btn { display: inline-block; padding: 10px 18px; border-radius: 6px; text-decoration: none; color: white; background: #0d6efd; margin-left: 8px; font-size: 15px; }
+.screen-buttons .btn-back { background: #6c757d; }
+
+@media print {
+    body { background: #fff; padding: 0; }
+    .screen-buttons { display: none; }
+    .invoice-box, .card-box { box-shadow: none; border-radius: 0; width: 100%; margin: 0; padding: 20px; }
+}
