@@ -19,6 +19,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } elseif (empty($hoVaTen) || empty($dienThoai) || empty($diaChi) || empty($tenDangNhap) || empty($matKhau)) {
         $thongBao = "Vui lòng nhập đầy đủ thông tin!";
         $loaiThongBao = "danger";
+    } elseif (strlen($matKhau) < 6) {
+        $thongBao = "Mật khẩu phải có ít nhất 6 ký tự!";
+        $loaiThongBao = "danger";
+    } elseif (!preg_match('/^0[0-9]{9}$/', $dienThoai)) {
+        $thongBao = "Số điện thoại không hợp lệ (phải là 10 chữ số bắt đầu từ 0)!";
+        $loaiThongBao = "danger";
     } else {
         $sql_check = "SELECT ID FROM khachhang WHERE TenDangNhap = ?";
         $stmt_check = $conn->prepare($sql_check);
@@ -30,10 +36,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $thongBao = "Tên đăng nhập này đã có người sử dụng. Vui lòng chọn tên khác!";
             $loaiThongBao = "danger";
         } else {
-            $sql_insert = "INSERT INTO khachhang (HoVaTen, DienThoai, DiaChi, TenDangNhap, MatKhau)
-                           VALUES (?, ?, ?, ?, ?)";
+            // Hash password trước khi lưu
+            $matKhauHash = password_hash($matKhau, PASSWORD_BCRYPT);
+            
+            $sql_insert = "INSERT INTO khachhang (HoVaTen, DienThoai, DiaChi, TenDangNhap, MatKhau, MatKhauHash)
+                           VALUES (?, ?, ?, ?, ?, ?)";
             $stmt_insert = $conn->prepare($sql_insert);
-            $stmt_insert->bind_param("sssss", $hoVaTen, $dienThoai, $diaChi, $tenDangNhap, $matKhau);
+            $stmt_insert->bind_param("ssssss", $hoVaTen, $dienThoai, $diaChi, $tenDangNhap, $matKhau, $matKhauHash);
 
             if ($stmt_insert->execute()) {
                 header("Location: login_khach.php?dangky=thanhcong");

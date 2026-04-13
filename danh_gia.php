@@ -18,33 +18,39 @@ if ($sp_id <= 0 || $hd_id <= 0) {
 }
 
 // Lấy thông tin sản phẩm để hiển thị
-$sql_sp = "SELECT TenSanPham, HinhAnh FROM SanPham WHERE ID = $sp_id";
-$rs_sp = $conn->query($sql_sp);
+$sql_sp = "SELECT TenSanPham, HinhAnh FROM SanPham WHERE ID = ?";
+$stmt_sp = $conn->prepare($sql_sp);
+$stmt_sp->bind_param("i", $sp_id);
+$stmt_sp->execute();
+$rs_sp = $stmt_sp->get_result();
 if (!$rs_sp || $rs_sp->num_rows == 0) {
     echo "<script>alert('Sản phẩm không tồn tại!'); window.location.href='san_pham.php';</script>";
     exit();
 }
 $sanpham = $rs_sp->fetch_assoc();
+$stmt_sp->close();
 $img_sp = !empty($sanpham['HinhAnh']) ? "uploads/" . $sanpham['HinhAnh'] : "uploads/no-image.jpg";
 
 // XỬ LÝ LƯU ĐÁNH GIÁ VÀO DATABASE KHI BẤM NÚT GỬI
 $thongbao = '';
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['btnGuiDanhGia'])) {
     $diem = (int)$_POST['rating'];
-    $noidung = $conn->real_escape_string(trim($_POST['noidung']));
+    $noidung = trim($_POST['noidung']);
     $ngaydanhgia = date('Y-m-d H:i:s');
 
-    // Chú ý: Bạn cần đảm bảo trong Database có bảng DanhGia (Gồm: ID, SanPhamID, KhachHangID, HoaDonID, DiemDanhGia, NoiDung, NgayDanhGia)
-    // Dưới đây là câu lệnh SQL mẫu, nếu bảng của bạn tên khác hoặc cột khác thì nhớ điều chỉnh cho khớp nhé.
+    // Sử dụng prepared statement để tránh SQL Injection
     $sql_insert = "INSERT INTO DanhGia (SanPhamID, KhachHangID, HoaDonID, DiemDanhGia, NoiDung, NgayDanhGia) 
-                   VALUES ($sp_id, $kh_id, $hd_id, $diem, '$noidung', '$ngaydanhgia')";
+                   VALUES (?, ?, ?, ?, ?, ?)";
     
-    if ($conn->query($sql_insert)) {
+    $stmt_insert = $conn->prepare($sql_insert);
+    $stmt_insert->bind_param("iiiiss", $sp_id, $kh_id, $hd_id, $diem, $noidung, $ngaydanhgia);
+    
+    if ($stmt_insert->execute()) {
         $thongbao = "<div class='alert alert-success rounded-pill text-center shadow-sm'><i class='bi bi-check-circle-fill'></i> Cảm ơn bạn đã gửi đánh giá!</div>";
-        // Có thể dùng header để chuyển hướng sau khi đánh giá xong:
-        // header("Refresh: 2; url=san_pham.php#san-pham-da-mua");
+        $stmt_insert->close();
     } else {
         $thongbao = "<div class='alert alert-danger rounded-pill text-center shadow-sm'><i class='bi bi-exclamation-triangle-fill'></i> Có lỗi xảy ra, vui lòng thử lại!</div>";
+        $stmt_insert->close();
     }
 }
 ?>

@@ -3,6 +3,12 @@ session_start();
 require_once 'thu_vien/connect.php';
 require_once 'thu_vien/nhatky_helper.php';
 
+// === KIỂM TRA SESSION TIMEOUT ===
+if (!checkSessionTimeout()) {
+    header("Location: login_khach.php?session_expired=1");
+    exit();
+}
+
 // 1. Kiểm tra giỏ hàng
 if (!isset($_SESSION['gio_hang']) || empty($_SESSION['gio_hang'])) {
     header("Location: trang_chu.php");
@@ -10,12 +16,12 @@ if (!isset($_SESSION['gio_hang']) || empty($_SESSION['gio_hang'])) {
 }
 
 // 2. Kiểm tra đăng nhập khách hàng
-if (!isset($_SESSION['khach_hang_id']) && !isset($_SESSION['khachhang_id'])) {
+if (!isset($_SESSION['khach_hang_id'])) {
     header("Location: login_khach.php");
     exit();
 }
 
-$khachHangID = (int)($_SESSION['khach_hang_id'] ?? $_SESSION['khachhang_id']);
+$khachHangID = (int)$_SESSION['khach_hang_id'];
 
 // ========================================================
 // --- BƯỚC 1: KIỂM TRA TÀI KHOẢN CÓ BỊ NỢ XẤU KHÔNG ---
@@ -160,6 +166,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 throw new Exception("Số tiền trả trước không hợp lệ.");
             }
 
+            if ($soTienTraTruoc > $tongTienGioHang) {
+                throw new Exception("Số tiền trả trước không thể lớn hơn tổng tiền hàng.");
+            }
+
             if (!in_array($soThangTraGop, [3, 6, 9, 12], true)) {
                 throw new Exception("Số tháng trả góp không hợp lệ.");
             }
@@ -169,7 +179,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
 
             $soTienConLai = $tongTienGioHang - $soTienTraTruoc;
-            $tongPhaiTra = $soTienConLai + ($soTienConLai * $laiSuat / 100 * $soThangTraGop);
+            // === CÔNG THỨC LÃI SUẤT CHÍNH XÁC ===
+            // Lãi suất hàng tháng từ $laiSuat (%), tính cho $soThangTraGop tháng
+            $tongPhaiTra = $soTienConLai + ($soTienConLai * $laiSuat / 100 / 12 * $soThangTraGop);
+            // Ví dụ: 10M, 1.5%/năm = 0.125%/tháng, 6 tháng → 75k lãi
             $tienGopMoiThang = $tongPhaiTra / $soThangTraGop;
             $soTienDaTra = 0;
             $soLanNhacNho = 0;
@@ -385,12 +398,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                                     <div class="mb-3">
                                         <label class="form-label">Số tiền trả trước</label>
-                                        <input type="number" name="SoTienTraTruoc" class="form-control" min="0" value="0">
+                                        <input type="number" id="soTienTraTruoc" name="SoTienTraTruoc" class="form-control" min="0" value="0" oninput="calculateInstallment()">
+                                        <small class="text-muted">Tối đa: <?php echo number_format($tongTienGioHang, 0, ',', '.')?> đ</small>
                                     </div>
 
                                     <div class="mb-3">
                                         <label class="form-label">Số tháng trả góp</label>
-                                        <select name="SoThangTraGop" class="form-select">
+                                        <select id="soThangTraGop" name="SoThangTraGop" class="form-select" onchange="calculateInstallment()">
                                             <option value="3">3 tháng</option>
                                             <option value="6" selected>6 tháng</option>
                                             <option value="9">9 tháng</option>
@@ -399,8 +413,32 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                     </div>
 
                                     <div class="mb-3">
-                                        <label class="form-label">Lãi suất (% / tháng)</label>
-                                        <input type="number" step="0.1" name="LaiSuat" class="form-control" value="1.5">
+                                        <label class="form-label">Lãi suất (% / năm)</label>
+                                        <input type="number" id="laiSuat" step="0.1" name="LaiSuat" class="form-control" value="1.5" oninput="calculateInstallment()">
+                                    </div>
+
+                                    <hr>
+
+                                    <!-- ===== HIỂN THỊ TÍNH TOÁN REAL-TIME ===== -->
+                                    <div id="resultBox" style="display:none;" class="alert alert-info rounded p-3">
+                                        <div class="mb-2">
+                                            <span>Số tiền còn lại trả:</span>
+                                            <span class="fw-bold float-end" id="soTienConLai">0 đ</span>
+                                        </div>
+                                        <div class="mb-2">
+                                            <span>Tính lãi:</span>
+                                            <span class="fw-bold float-end" id="tienLai">0 đ</span>
+                                        </div>
+                                        <hr>
+                                        <div class="mb-2 fs-5">
+                                            <span>Tổng phải trả:</span>
+                                            <span class="fw-bold text-danger float-end" id="tongPhaiTra">0 đ</span>
+                                        </div>
+                                        <hr>
+                                        <div>
+                                            <span>Góp mỗi tháng:</span>
+                                            <span class="fw-bold text-success float-end" id="tienGopMoiThang">0 đ</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -474,3 +512,59 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 </body>
 </html>
+
+<script>
+// ===== JAVASCRIPT TÍNH TOÁN REAL-TIME TRẢ GÓP =====
+const TONG_TIEN_GIO_HANG = <?php echo $tongTienGioHang; ?>;
+
+function toggleTraGopBox() {
+    const tragop = document.getElementById('tragop');
+    const boxTraGop = document.getElementById('boxTraGop');
+    
+    if (tragop.checked) {
+        boxTraGop.style.display = 'block';
+        calculateInstallment();
+    } else {
+        boxTraGop.style.display = 'none';
+        document.getElementById('resultBox').style.display = 'none';
+    }
+}
+
+function calculateInstallment() {
+    const soTienTraTruoc = parseFloat(document.getElementById('soTienTraTruoc').value) || 0;
+    const soThangTraGop = parseInt(document.getElementById('soThangTraGop').value) || 6;
+    const laiSuat = parseFloat(document.getElementById('laiSuat').value) || 1.5;
+    
+    // Validate input
+    if (soTienTraTruoc < 0 || soTienTraTruoc > TONG_TIEN_GIO_HANG) {
+        document.getElementById('resultBox').style.display = 'none';
+        return;
+    }
+    
+    const soTienConLai = TONG_TIEN_GIO_HANG - soTienTraTruoc;
+    const tienLai = soTienConLai * (laiSuat / 100 / 12) * soThangTraGop;
+    const tongPhaiTra = soTienConLai + tienLai;
+    const tienGopMoiThang = tongPhaiTra / soThangTraGop;
+    
+    // Update display
+    document.getElementById('soTienConLai').textContent = formatCurrency(soTienConLai);
+    document.getElementById('tienLai').textContent = formatCurrency(tienLai);
+    document.getElementById('tongPhaiTra').textContent = formatCurrency(tongPhaiTra);
+    document.getElementById('tienGopMoiThang').textContent = formatCurrency(tienGopMoiThang);
+    
+    // Show result box
+    document.getElementById('resultBox').style.display = 'block';
+}
+
+function formatCurrency(value) {
+    return Math.floor(value).toLocaleString('vi-VN') + ' đ';
+}
+
+// Toggle on page load if tragop was selected
+document.addEventListener('DOMContentLoaded', function() {
+    const tragop = document.getElementById('tragop');
+    if (tragop && tragop.checked) {
+        toggleTraGopBox();
+    }
+});
+</script>

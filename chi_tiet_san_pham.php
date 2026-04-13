@@ -99,18 +99,48 @@ $hinhAnh = !empty($sp['HinhAnh']) ? "uploads/" . $sp['HinhAnh'] : "uploads/no-im
                         <hr class="my-4">
 
                         <?php if ($sp['SoLuong'] > 0): ?>
-                            <form action="them_gio_hang.php" method="POST" class="d-flex align-items-center">
+                            <form action="them_gio_hang.php" method="POST" class="d-flex align-items-center gap-3">
                                 <input type="hidden" name="id_sp" value="<?php echo $sp['ID']; ?>">
 
-                                <label class="me-3 fw-bold">Số lượng:</label>
-                                <input type="number" name="so_luong" value="1" min="1" max="<?php echo $sp['SoLuong']; ?>"
-                                    class="form-control text-center me-3" style="width: 80px;">
+                                <label class="fw-bold">Số lượng:</label>
+                                <input type="number" id="soLuongInput" name="so_luong" value="1" min="1" max="<?php echo $sp['SoLuong']; ?>"
+                                    class="form-control text-center" style="width: 80px;" onchange="validateQuantity()">
 
-                                <button type="submit" class="btn btn-primary btn-lg px-4">
+                                <button type="submit" id="addToCartBtn" class="btn btn-primary btn-lg px-4">
                                     <i class="bi bi-cart-plus-fill"></i> Chọn Mua Ngay
                                 </button>
                             </form>
+                        <?php else: ?>
+                            <div class="alert alert-danger mb-0 d-flex align-items-center gap-2">
+                                <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                                <div>
+                                    <strong>Sản phẩm này hiện đã hết hàng</strong>
+                                    <small class="d-block">Cảm ơn bạn, hãy quay lại sau để cập nhật hàng mới</small>
+                                </div>
+                            </div>
                         <?php endif; ?>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function validateQuantity() {
+        const input = document.getElementById('soLuongInput');
+        const maxQuantity = <?php echo $sp['SoLuong']; ?>;
+        const currentValue = parseInt(input.value) || 1;
+        
+        if (currentValue > maxQuantity) {
+            input.value = maxQuantity;
+            alert('Số lượng không thể vượt quá ' + maxQuantity + ' sản phẩm trong kho');
+        }
+        if (currentValue < 1) {
+            input.value = 1;
+        }
+    }
+    </script>
 
                     </div>
                 </div>

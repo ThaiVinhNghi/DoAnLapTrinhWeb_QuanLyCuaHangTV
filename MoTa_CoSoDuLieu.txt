@@ -1,0 +1,712 @@
+===============================================================================
+CƠ SỞ DỮ LIỆU: quanlycuahangtivi
+HỆ THỐNG QUẢN LÝ CỬA HÀNG TIV Í & ĐIỆN TỬ
+===============================================================================
+
+DATABASE NAME: quanlycuahangtivi
+CHARACTER SET: utf8mb4
+COLLATION: utf8mb4_general_ci
+ENGINE: InnoDB
+
+===============================================================================
+1. DANH SÁCH BẢNG DỮ LIỆU (13 BẢNG CHÍNH)
+===============================================================================
+
+┌─ BẢNG QUẢN LÝ KHÁCH HÀNG & NHÂN VIÊN
+├─ khachhang         (Thông tin khách hàng)
+├─ nhanvien          (Thông tin nhân viên)
+└─ nhatky_hethong    (Nhật ký hệ thống)
+
+┌─ BẢNG QUẢN LÝ SẢN PHẨM
+├─ sanpham           (Thông tin sản phẩm)
+├─ loaisanpham       (Loại sản phẩm)
+└─ hangsanxuat       (Hãng sản xuất)
+
+┌─ BẢNG QUẢN LÝ GIAO DỊCH BÁN
+├─ hoadon            (Hóa đơn bán)
+├─ hoadon_chitiet    (Chi tiết hóa đơn)
+└─ baohanh           (Bảo hành sản phẩm)
+
+┌─ BẢNG QUẢN LÝ NHẬP HÀNG
+├─ phieunhap         (Phiếu nhập hàng)
+└─ phieunhap_chitiet (Chi tiết phiếu nhập)
+
+┌─ BẢNG QUẢN LÝ NHÀ CUNG CẤP
+└─ nhacungcap        (Thông tin nhà cung cấp)
+
+┌─ BẢNG QUẢN LÝ TRẢ GÓP
+├─ tragop            (Đơn đăng ký trả góp)
+├─ tragop_chitiet    (Chi tiết sản phẩm trả góp)
+└─ tragop_thanhtoan  (Lịch sử thanh toán trả góp)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+BẢNG 1: khachhang
+───────────────────────────────────────────────────────────────────────────────
+Mục đích: Lưu trữ thông tin khách hàng đăng ký tài khoản
+Số bản ghi: 41 (từ ID 1-41)
+
+Cột dữ liệu:
+┌─────────────────┬──────────────────┬─────────┬────────────────────────┐
+│ Tên cột         │ Kiểu dữ liệu     │ Bắt buộc│ Ghi chú                │
+├─────────────────┼──────────────────┼─────────┼────────────────────────┤
+│ ID              │ INT(11)          │ PK ✓    │ Khóa chính, auto_incr  │
+│ HoVaTen         │ VARCHAR(255)     │         │ Tên khách hàng         │
+│ DienThoai       │ VARCHAR(20)      │         │ Số điện thoại (10 số)  │
+│ DiaChi          │ VARCHAR(255)     │         │ Địa chỉ giao hàng      │
+│ TenDangNhap     │ VARCHAR(50)      │ ✓       │ Tên đăng nhập (unique) │
+│ MatKhau         │ VARCHAR(255)     │ ✓       │ Mật khẩu (legacy)      │
+│ MatKhauHash     │ VARCHAR(255)     │         │ Mật khẩu BCRYPT (mới)  │
+└─────────────────┴──────────────────┴─────────┴────────────────────────┘
+
+Ràng buộc:
+  • PRIMARY KEY: ID
+  • Mối quan hệ: hoadon, baohanh, tragop (1->N)
+
+Dữ liệu mẫu:
+  • ID: 1-40 (Khách hàng thông thường)
+  • ID: 41 (Khách hàng test - "Thái Vĩnh Nghi")
+  • Mật khẩu khuyến nghị: Tối thiểu 6 ký tự, định dạng: 0xxxxxxxxx (điện thoại)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+BẢNG 2: nhanvien
+───────────────────────────────────────────────────────────────────────────────
+Mục đích: Lưu trữ thông tin nhân viên quầy bán hàng & admin
+Số bản ghi: 6
+
+Cột dữ liệu:
+┌─────────────────┬──────────────────┬─────────┬────────────────────────┐
+│ Tên cột         │ Kiểu dữ liệu     │ Bắt buộc│ Ghi chú                │
+├─────────────────┼──────────────────┼─────────┼────────────────────────┤
+│ ID              │ INT(11)          │ PK ✓    │ Khóa chính, auto_incr  │
+│ HoVaTen         │ VARCHAR(255)     │         │ Tên nhân viên           │
+│ DienThoai       │ VARCHAR(20)      │         │ Số điện thoại           │
+│ DiaChi          │ VARCHAR(255)     │         │ Địa chỉ cư trú         │
+│ TenDangNhap     │ VARCHAR(50)      │         │ Tên đăng nhập           │
+│ MatKhau         │ VARCHAR(50)      │         │ Mật khẩu (legacy)      │
+│ MatKhauHash     │ VARCHAR(255)     │         │ Mật khẩu BCRYPT (mới)  │
+│ QuyenHan        │ INT(11)          │         │ 1=Admin, 0=Nhân viên   │
+│ NgayVaoLam      │ DATE             │         │ Ngày bắt đầu làm việc  │
+└─────────────────┴──────────────────┴─────────┴────────────────────────┘
+
+Ràng buộc:
+  • PRIMARY KEY: ID
+  • Mối quan hệ: hoadon, phieunhap, tragop (1->N)
+
+Quyền hạn:
+  • QuyenHan = 1: Admin -> Quản lý hệ thống, duyệt trả góp
+  • QuyenHan = 0: Nhân viên -> Bán hàng, lập hóa đơn
+
+═══════════════════════════════════════════════════════════════════════════════
+
+BẢNG 3: sanpham
+───────────────────────────────────────────────────────────────────────────────
+Mục đích: Lưu trữ danh sách các sản phẩm bán tại cửa hàng
+Số bản ghi: 20
+
+Cột dữ liệu:
+┌──────────────────────┬──────────────────┬─────────┬──────────────────────┐
+│ Tên cột              │ Kiểu dữ liệu     │ Bắt buộc│ Ghi chú              │
+├──────────────────────┼──────────────────┼─────────┼──────────────────────┤
+│ ID                   │ INT(11)          │ PK ✓    │ Khóa chính           │
+│ LoaiSanPhamID        │ INT(11)          │ FK      │ Tham chiếu bảng      │
+│                      │                  │         │ loaisanpham          │
+│ HangSanXuatID        │ INT(11)          │ FK      │ Tham chiếu bảng      │
+│                      │                  │         │ hangsanxuat          │
+│ TenSanPham           │ VARCHAR(255)     │         │ Tên chi tiết sản phẩm│
+│ DonGia               │ DECIMAL(15,2)    │         │ Giá bán (VND)        │
+│ SoLuong              │ INT(11)          │         │ Số lượng tồn kho     │
+│ HinhAnh              │ VARCHAR(255)     │         │ Tên file ảnh (JPG)   │
+│ MoTa                 │ TEXT             │         │ Mô tả đặc điểm sp    │
+│ PhanTramGiam         │ INT(11)          │         │ Phần trăm giảm giá   │
+│                      │                  │         │ (default: 0)         │
+└──────────────────────┴──────────────────┴─────────┴──────────────────────┘
+
+Ràng buộc:
+  • PRIMARY KEY: ID
+  • FOREIGN KEY: LoaiSanPhamID -> loaisanpham(ID)
+  • FOREIGN KEY: HangSanXuatID -> hangsanxuat(ID)
+  • Mối quan hệ: hoadon_chitiet, baohanh, phieunhap_chitiet (1->N)
+
+Dữ liệu mẫu:
+  • ID: 1-20 (20 mẫu TV)
+  • Giá: 5.2M - 85M VND
+  • Loại: Smart TV 4K, OLED, QLED, Mini LED, 8K... (10 loại)
+  • Hãng: Sony, Samsung, LG, TCL, Casper, Xiaomi... (9 hãng)
+  • Tồn kho: 4-60 chiếc
+
+═══════════════════════════════════════════════════════════════════════════════
+
+BẢNG 4: loaisanpham
+───────────────────────────────────────────────────────────────────────────────
+Mục đích: Danh mục loại sản phẩm (Phân loại theo công nghệ)
+Số bản ghi: 15
+
+Cột dữ liệu:
+┌──────────────────┬──────────────────┬─────────┬──────────────────────┐
+│ Tên cột          │ Kiểu dữ liệu     │ Bắt buộc│ Ghi chú              │
+├──────────────────┼──────────────────┼─────────┼──────────────────────┤
+│ ID               │ INT(11)          │ PK ✓    │ Khóa chính           │
+│ TenLoai          │ VARCHAR(100)     │         │ Tên loại sản phẩm    │
+└──────────────────┴──────────────────┴─────────┴──────────────────────┘
+
+Danh sách loại:
+  1. Smart TV 4K
+  2. Android TV
+  3. Google TV
+  4. TV OLED (Organic LED - cao cấp)
+  5. TV QLED (Quantum Dot - mid-range)
+  6. TV Mini LED
+  7. Tivi Độ phân giải 8K
+  8. Tivi Màn Hình Cong
+  9. Tivi Khung Tranh (The Frame)
+  10. Tivi Cảm Ứng
+  11. Tivi Ngoài Trời (Chống nước)
+  12. Loa Soundbar Tivi
+  13. Giá Treo Tivi Đa Năng
+  14. Android TV Box
+  15. Cáp HDMI/Phụ kiện khác
+
+═══════════════════════════════════════════════════════════════════════════════
+
+BẢNG 5: hangsanxuat
+───────────────────────────────────────────────────────────────────────────────
+Mục đích: Danh sách các hãng sản xuất TV
+Số bản ghi: 9
+
+Cột dữ liệu:
+┌──────────────────────┬──────────────────┬─────────┬──────────────────┐
+│ Tên cột              │ Kiểu dữ liệu     │ Bắt buộc│ Ghi chú          │
+├──────────────────────┼──────────────────┼─────────┼──────────────────┤
+│ ID                   │ INT(11)          │ PK ✓    │ Khóa chính       │
+│ TenHangSanXuat       │ VARCHAR(100)     │         │ Tên hãng (VN)    │
+└──────────────────────┴──────────────────┴─────────┴──────────────────┘
+
+Danh sách hãng:
+  1. Sony           5. Casper       9. Coocaa
+  2. Samsung        6. Xiaomi
+  3. LG             7. Sharp
+  4. TCL            8. Toshiba
+
+═══════════════════════════════════════════════════════════════════════════════
+
+BẢNG 6: hoadon
+───────────────────────────────────────────────────────────────────────────────
+Mục đích: Lưu trữ các hóa đơn bán hàng
+Số bản ghi: 18
+
+Cột dữ liệu:
+┌──────────────────┬──────────────────┬─────────┬──────────────────────┐
+│ Tên cột          │ Kiểu dữ liệu     │ Bắt buộc│ Ghi chú              │
+├──────────────────┼──────────────────┼─────────┼──────────────────────┤
+│ ID               │ INT(11)          │ PK ✓    │ Khóa chính           │
+│ NhanVienID       │ INT(11)          │ FK      │ Tham chiếu nhanvien  │
+│ KhachHangID      │ INT(11)          │ FK      │ Tham chiếu khachhang │
+│ NgayLap          │ DATETIME         │         │ Ngày lập hóa đơn     │
+│ GhiChuHoaDon     │ TEXT             │         │ Ghi chú đặc biệt     │
+└──────────────────┴──────────────────┴─────────┴──────────────────────┘
+
+Ràng buộc:
+  • PRIMARY KEY: ID
+  • FOREIGN KEY: NhanVienID -> nhanvien(ID)
+  • FOREIGN KEY: KhachHangID -> khachhang(ID)
+  • Mối quan hệ: hoadon_chitiet, baohanh, tragop (1->N)
+
+Dữ liệu mẫu:
+  • ID: 1-15 (Hóa đơn quá khứ - tháng 11-12/2023)
+  • ID: 16-18 (Hóa đơn mới - tháng 3/2026)
+  • Ghi chú: Hình thức thanh toán, giao hàng, dịch vụ kèm theo
+
+═══════════════════════════════════════════════════════════════════════════════
+
+BẢNG 7: hoadon_chitiet
+───────────────────────────────────────────────────────────────────────────────
+Mục đích: Chi tiết từng sản phẩm trong mỗi hóa đơn
+Số bản ghi: 20
+
+Cột dữ liệu:
+┌──────────────────┬──────────────────┬─────────┬──────────────────────┐
+│ Tên cột          │ Kiểu dữ liệu     │ Bắt buộc│ Ghi chú              │
+├──────────────────┼──────────────────┼─────────┼──────────────────────┤
+│ ID               │ INT(11)          │ PK ✓    │ Khóa chính           │
+│ HoaDonID         │ INT(11)          │ FK      │ Tham chiếu hoadon    │
+│ SanPhamID        │ INT(11)          │ FK      │ Tham chiếu sanpham   │
+│ SoLuongBan       │ INT(11)          │         │ Số lượng bán         │
+│ DonGiaBan        │ DECIMAL(15,2)    │         │ Giá bán thực tế (VND)│
+└──────────────────┴──────────────────┴─────────┴──────────────────────┘
+
+Ràng buộc:
+  • PRIMARY KEY: ID
+  • FOREIGN KEY: HoaDonID -> hoadon(ID)
+  • FOREIGN KEY: SanPhamID -> sanpham(ID)
+
+Ghi chú:
+  • DonGiaBan có thể khác với giá hiện tại trong sanpham (lịch sử giá)
+  • ThanhTien = SoLuongBan * DonGiaBan
+
+═══════════════════════════════════════════════════════════════════════════════
+
+BẢNG 8: baohanh
+───────────────────────────────────────────────────────────────────────────────
+Mục đích: Quản lý các gói bảo hành sản phẩm
+Số bản ghi: 15
+
+Cột dữ liệu:
+┌──────────────────┬──────────────────┬─────────┬──────────────────────┐
+│ Tên cột          │ Kiểu dữ liệu     │ Bắt buộc│ Ghi chú              │
+├──────────────────┼──────────────────┼─────────┼──────────────────────┤
+│ ID               │ INT(11)          │ PK ✓    │ Khóa chính           │
+│ HoaDonID         │ INT(11)          │ FK      │ Hóa đơn gốc          │
+│ SanPhamID        │ INT(11)          │ FK      │ Sản phẩm bảo hành    │
+│ SoSerial         │ VARCHAR(100)     │         │ Mã serial (SN-...)   │
+│ NgayKichHoat     │ DATE             │         │ Ngày bắt đầu         │
+│ NgayHetHan       │ DATE             │         │ Ngày kết thúc        │
+│ TrangThai        │ VARCHAR(50)      │         │ "Đang bảo hành" hoặc │
+│                  │                  │         │ "Đã hủy"             │
+└──────────────────┴──────────────────┴─────────┴──────────────────────┘
+
+Ràng buộc:
+  • PRIMARY KEY: ID
+  • FOREIGN KEY: HoaDonID -> hoadon(ID)
+  • FOREIGN KEY: SanPhamID -> sanpham(ID)
+
+Thời hạn bảo hành:
+  • Mặc định: 2 năm từ ngày kích hoạt
+  • Có thường xuyên gia hạn theo yêu cầu
+
+═══════════════════════════════════════════════════════════════════════════════
+
+BẢNG 9: phieunhap
+───────────────────────────────────────────────────────────────────────────────
+Mục đích: Quản lý phiếu nhập hàng từ nhà cung cấp
+Số bản ghi: 18
+
+Cột dữ liệu:
+┌──────────────────┬──────────────────┬─────────┬──────────────────────┐
+│ Tên cột          │ Kiểu dữ liệu     │ Bắt buộc│ Ghi chú              │
+├──────────────────┼──────────────────┼─────────┼──────────────────────┤
+│ ID               │ INT(11)          │ PK ✓    │ Khóa chính           │
+│ NhanVienID       │ INT(11)          │ FK      │ Người nhập hàng      │
+│ NhaCungCapID     │ INT(11)          │ FK      │ Nhà cung cấp         │
+│ NgayNhap         │ DATETIME         │         │ Ngày nhập            │
+│ TongTien         │ DECIMAL(15,2)    │         │ Tổng tiền (VND)      │
+│ GhiChu           │ TEXT             │         │ Mô tả lô hàng        │
+└──────────────────┴──────────────────┴─────────┴──────────────────────┘
+
+Ràng buộc:
+  • PRIMARY KEY: ID
+  • FOREIGN KEY: NhanVienID -> nhanvien(ID)
+  • FOREIGN KEY: NhaCungCapID -> nhacungcap(ID)
+  • Mối quan hệ: phieunhap_chitiet (1->N)
+
+Dữ liệu mẫu:
+  • Giá nhập: 65M - 500M VND (tùy kích thước lô)
+  • Tần suất: Hàng tháng
+
+═══════════════════════════════════════════════════════════════════════════════
+
+BẢNG 10: phieunhap_chitiet
+──────────────────────────────────────────────────────────────────────────────
+Mục đích: Chi tiết các sản phẩm trong mỗi phiếu nhập
+Số bản ghi: 2
+
+Cột dữ liệu:
+┌──────────────────┬──────────────────┬─────────┬──────────────────────┐
+│ Tên cột          │ Kiểu dữ liệu     │ Bắt buộc│ Ghi chú              │
+├──────────────────┼──────────────────┼─────────┼──────────────────────┤
+│ ID               │ INT(11)          │ PK ✓    │ Khóa chính           │
+│ PhieuNhapID      │ INT(11)          │ FK      │ Tham chiếu phieunhap │
+│ SanPhamID        │ INT(11)          │ FK      │ Tham chiếu sanpham   │
+│ SoLuongNhap      │ INT(11)          │         │ Số lượng nhập        │
+│ DonGiaNhap       │ DECIMAL(15,2)    │         │ Giá nhập (VND)       │
+└──────────────────┴──────────────────┴─────────┴──────────────────────┘
+
+Ràng buộc:
+  • PRIMARY KEY: ID
+  • FOREIGN KEY: PhieuNhapID -> phieunhap(ID)
+  • FOREIGN KEY: SanPhamID -> sanpham(ID)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+BẢNG 11: nhacungcap
+──────────────────────────────────────────────────────────────────────────────
+Mục đích: Danh sách nhà cung cấp (đơn vị cung cấp sản phẩm)
+Số bản ghi: 15
+
+Cột dữ liệu:
+┌──────────────────┬──────────────────┬─────────┬──────────────────────┐
+│ Tên cột          │ Kiểu dữ liệu     │ Bắt buộc│ Ghi chú              │
+├──────────────────┼──────────────────┼─────────┼──────────────────────┤
+│ ID               │ INT(11)          │ PK ✓    │ Khóa chính           │
+│ TenNhaCungCap    │ VARCHAR(255)     │         │ Tên công ty           │
+│ DienThoai        │ VARCHAR(20)      │         │ Số điện thoại         │
+│ Email            │ VARCHAR(100)     │         │ Email liên hệ        │
+│ DiaChi           │ VARCHAR(255)     │         │ Địa chỉ trụ sở       │
+└──────────────────┴──────────────────┴─────────┴──────────────────────┘
+
+Mối quan hệ:
+  • Mối quan hệ: phieunhap (1->N)
+
+Danh sách cung cấp:
+  • 15 nhà cung cấp lớn: Samsung, Sony, LG, TCL, Panasonic...
+  • Phủ sóng toàn bộ các hãng TV chính
+
+═══════════════════════════════════════════════════════════════════════════════
+
+BẢNG 12: tragop
+──────────────────────────────────────────────────────────────────────────────
+Mục đích: Quản lý các đơn đăng ký mua trả góp (vay tiêu dùng)
+Số bản ghi: 5
+
+Cột dữ liệu:
+┌──────────────────┬──────────────────┬─────────┬──────────────────────┐
+│ Tên cột          │ Kiểu dữ liệu     │ Bắt buộc│ Ghi chú              │
+├──────────────────┼──────────────────┼─────────┼──────────────────────┤
+│ ID               │ INT(11)          │ PK ✓    │ Khóa chính           │
+│ KhachHangID      │ INT(11)          │ FK ✓    │ Khách đăng ký        │
+│ NhanVienID       │ INT(11)          │ FK      │ Nhân viên duyệt       │
+│ HoaDonID         │ INT(11)          │ FK      │ Hóa đơn liên quan     │
+│ NgayDangKy       │ DATETIME         │         │ Ngày đăng ký (tự động)│
+│ SoTienTraTruoc   │ DECIMAL(15,0)    │         │ Tiền trả trước (VND)  │
+│ SoThangTraGop    │ INT(11)          │         │ Số tháng trả góp (6-12)│
+│ LaiSuat          │ DECIMAL(5,2)     │         │ Lãi suất (%) / tháng  │
+│ TongTien         │ DECIMAL(15,0)    │         │ Tổng giá trị hóa đơn  │
+│ TienGopMoiThang  │ DECIMAL(15,0)    │         │ Tiền góp mỗi tháng    │
+│ GhiChu           │ VARCHAR(255)     │         │ Ghi chú đơn hàng      │
+│ TrangThai        │ VARCHAR(50)      │         │ "Chờ duyệt" /         │
+│                  │                  │         │ "Đã duyệt"            │
+│─ SoTienConLai    │ DECIMAL(15,0)    │         │ Số tiền sau trừ trước │
+│─ TongPhaiTra     │ DECIMAL(15,0)    │         │ Tổng thanh toán ≥ gốc │
+│─ SoTienDaTra     │ DECIMAL(15,0)    │         │ Đã trả tích lũy       │
+│─ SoLanNhacNho    │ INT(11)          │         │ Lần nhắc nợ           │
+│─ TinhTrangTra    │ VARCHAR(50)      │         │ Đang góp / Đã trả hết │
+└──────────────────┴──────────────────┴─────────┴──────────────────────┘
+
+Ràng buộc:
+  • PRIMARY KEY: ID
+  • FOREIGN KEY: KhachHangID -> khachhang(ID)
+  • FOREIGN KEY: NhanVienID -> nhanvien(ID)
+  • FOREIGN KEY: HoaDonID -> hoadon(ID)
+  • Mối quan hệ: tragop_chitiet, tragop_thanhtoan (1->N)
+
+Công thức tính:
+  SoTienConLai = TongTien - SoTienTraTruoc
+  TongPhaiTra = SoTienConLai + (SoTienConLai × LaiSuat / 100 / 12 × SoThangTraGop)
+  TienGopMoiThang = TongPhaiTra / SoThangTraGop
+
+Dữ liệu mẫu:
+  • ID: 1-5 (5 đơn trả góp đang xử lý)
+  • Lãi suất: 1.0% - 1.50% / tháng
+  • Kỳ hạn: 6-12 tháng
+  • Trạng thái: "Chờ duyệt" (ID 1,2,4,5) hoặc "Đã duyệt" (ID 3)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+BẢNG 13: tragop_chitiet
+──────────────────────────────────────────────────────────────────────────────
+Mục đích: Chi tiết sản phẩm trong mỗi đơn trả góp
+Số bản ghi: 6
+
+Cột dữ liệu:
+┌──────────────────┬──────────────────┬─────────┬──────────────────────┐
+│ Tên cột          │ Kiểu dữ liệu     │ Bắt buộc│ Ghi chú              │
+├──────────────────┼──────────────────┼─────────┼──────────────────────┤
+│ ID               │ INT(11)          │ PK ✓    │ Khóa chính           │
+│ TraGopID         │ INT(11)          │ FK ✓    │ Đơn trả góp          │
+│ SanPhamID        │ INT(11)          │ FK ✓    │ Sản phẩm mua         │
+│ SoLuong          │ INT(11)          │         │ Số lượng (mặc định 1)│
+│ DonGia           │ DECIMAL(15,0)    │         │ Giá tại thời điểm mua│
+│ ThanhTien        │ DECIMAL(15,0)    │         │ SoLuong × DonGia     │
+└──────────────────┴──────────────────┴─────────┴──────────────────────┘
+
+Ràng buộc:
+  • PRIMARY KEY: ID
+  • FOREIGN KEY: TraGopID -> tragop(ID) [ON DELETE CASCADE]
+  • FOREIGN KEY: SanPhamID -> sanpham(ID)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+BẢNG 14: tragop_thanhtoan
+──────────────────────────────────────────────────────────────────────────────
+Mục đích: Ghi nhận lịch sử thanh toán từng kỳ trả góp
+Số bản ghi: 2
+
+Cột dữ liệu:
+┌──────────────────┬──────────────────┬─────────┬──────────────────────┐
+│ Tên cột          │ Kiểu dữ liệu     │ Bắt buộc│ Ghi chú              │
+├──────────────────┼──────────────────┼─────────┼──────────────────────┤
+│ ID               │ INT(11)          │ PK ✓    │ Khóa chính           │
+│ TraGopID         │ INT(11)          │ FK ✓    │ Đơn trả góp          │
+│ NhanVienID       │ INT(11)          │ FK      │ Người thu tiền       │
+│ NgayThu          │ DATETIME         │         │ Ngày thu (tự động)   │
+│ KyThu            │ INT(11)          │         │ Kỳ thứ mấy (1-12)    │
+│ SoTienThu        │ DECIMAL(15,0)    │         │ Số tiền thanh toán    │
+│ GhiChu           │ VARCHAR(255)     │         │ Ghi chú thanh toán    │
+└──────────────────┴──────────────────┴─────────┴──────────────────────┘
+
+Ràng buộc:
+  • PRIMARY KEY: ID
+  • FOREIGN KEY: TraGopID -> tragop(ID) [ON DELETE CASCADE]
+  • FOREIGN KEY: NhanVienID -> nhanvien(ID)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+BẢNG 15: nhatky_hethong
+──────────────────────────────────────────────────────────────────────────────
+Mục đích: Ghi nhận nhật ký hoạt động của hệ thống (audit log)
+Số bản ghi: Động (tăng theo số sự kiện)
+
+Cột dữ liệu:
+┌──────────────────┬──────────────────┬─────────┬──────────────────────┐
+│ Tên cột          │ Kiểu dữ liệu     │ Bắt buộc│ Ghi chú              │
+├──────────────────┼──────────────────┼─────────┼──────────────────────┤
+│ ID               │ INT              │ PK ✓    │ Khóa chính           │
+│ LoaiNguoiDung    │ VARCHAR(20)      │ ✓       │ Admin/NhanVien/...   │
+│ NguoiDungID      │ INT              │         │ ID người dùng        │
+│ TenDangNhap      │ VARCHAR(100)     │         │ Tên tài khoản        │
+│ HoTen            │ VARCHAR(255)     │         │ Họ tên               │
+│ HanhDong         │ VARCHAR(100)     │ ✓       │ DangNhap, DatHang... │
+│ BangTacDong      │ VARCHAR(100)     │         │ nhanvien, khachhang..│
+│ BanGhiID         │ INT              │         │ ID bản ghi liên quan │
+│ MoTa             │ TEXT             │         │ Mô tả chi tiết       │
+│ TrangThai        │ VARCHAR(50)      │         │ ThanhCong / Loi      │
+│ DiaChiIP         │ VARCHAR(50)      │         │ IP người dùng        │
+│ ThoiGian         │ DATETIME         │ ✓       │ Thời gian sự kiện    │
+└──────────────────┴──────────────────┴─────────┴──────────────────────┘
+
+Mục đích:
+  • Theo dõi đăng nhập: Khi nào, ai, IP nào
+  • Theo dõi gửi đơn: Bao nhiêu, giá trị bao nhiêu
+  • Theo dõi duyệt: Hành động của admin, quy tắc gì
+  • Phát hiện lừa đảo: Bất thường trong hành vi người dùng
+
+═══════════════════════════════════════════════════════════════════════════════
+2. BIỂU ĐỒ QUAN HỆ BẢNG DỮ LIỆU
+═══════════════════════════════════════════════════════════════════════════════
+
+QUAN HỆ 1-N (One-to-Many):
+
+┌──────────────┐
+│  khachhang   │
+└──────┬───────┘
+       │ 1 khách hàng : N hóa đơn
+       ├──── → hoadon
+       │
+       ├──── → tragop
+       │
+       └──── → baohanh (qua hoadon)
+
+┌──────────────┐
+│  nhanvien    │
+└──────┬───────┘
+       │ 1 nhân viên : N hóa đơn / nhập
+       ├──── → hoadon
+       │
+       ├──── → phieunhap
+       │
+       ├──── → tragop (duyệt)
+       │
+       └──── → tragop_thanhtoan (thu tiền)
+
+┌──────────────┐
+│  sanpham     │
+└──────┬───────┘
+       │ 1 sản phẩm : N dòng hóa đơn
+       ├──── → hoadon_chitiet
+       │
+       ├──── → phieunhap_chitiet
+       │
+       ├──── → baohanh
+       │
+       └──── → tragop_chitiet
+
+┌──────────────┐
+│  loaisanpham │
+└──────┬───────┘
+       │ 1 loại : N sản phẩm
+       └──── → sanpham
+
+┌──────────────┐
+│ hangsanxuat  │
+└──────┬───────┘
+       │ 1 hãng : N sản phẩm
+       └──── → sanpham
+
+┌──────────────┐
+│  nhacungcap  │
+└──────┬───────┘
+       │ 1 nhà cung cấp : N phiếu nhập
+       └──── → phieunhap
+
+┌──────────────┐
+│   hoadon     │
+└──────┬───────┘
+       │ 1 hóa đơn : N chi tiết
+       ├──── → hoadon_chitiet
+       │
+       ├──── → baohanh
+       │
+       └──── → tragop
+
+┌──────────────┐
+│ phieunhap    │
+└──────┬───────┘
+       │ 1 phiếu : N chi tiết nhập
+       └──── → phieunhap_chitiet
+
+┌──────────────┐
+│  tragop      │
+└──────┬───────┘
+       │ 1 đơn góp : N chi tiết / thanh toán
+       ├──── → tragop_chitiet
+       │
+       └──── → tragop_thanhtoan
+
+═══════════════════════════════════════════════════════════════════════════════
+3. MÔ TẢ QUY TRÌNH KINH DOANH
+═══════════════════════════════════════════════════════════════════════════════
+
+BÁN HÀNG THƯỜNG (Thanh toán 100%):
+───────────────────────────────────
+  1. Khách vào hệ thống, duyệt sản phẩm (sanpham)
+  2. Thêm vào giỏ hàng, thanh toán
+  3. Nhân viên tạo hóa đơn (hoadon)
+  4. Ghi chi tiết hóa đơn (hoadon_chitiet) - bao gồm giá bán thực tế
+  5. Tạo phiếu bảo hành (baohanh) với serial, ngày bắt đầu
+  6. Ghi nhật ký: "DatHang" (nhatky_hethong)
+
+BÁN HÀNG TRẢ GÓP (Vay tiêu dùng):
+──────────────────────────────────
+  1. Khách đăng ký trả góp (tragop)
+     • Chỉ định: TongTien, SoTienTraTruoc, SoThangTraGop, LaiSuat
+     • Trạng thái: "Chờ duyệt"
+  2. Admin duyệt (tragop.NhanVienID = admin_id, TrangThai = "Đã duyệt")
+  3. Ghi chi tiết sản phẩm (tragop_chitiet)
+  4. Hệ thống tính:
+     • SoTienConLai = TongTien - SoTienTraTruoc
+     • TongPhaiTra = SoTienConLai + (SoTienConLai × LaiSuat/100/12 × SoThangTraGop)
+     • TienGopMoiThang = TongPhaiTra / SoThangTraGop
+  5. Khách thanh toán kỳ 1→N (tragop_thanhtoan)
+     • Nhân viên ghi nhận: NgayThu, KyThu, SoTienThu
+     • Hệ thống cập nhật: SoTienDaTra, TinhTrangTra
+  6. Khi SoTienDaTra = TongPhaiTra → TinhTrangTra = "Đã trả hết"
+
+NHẬP HÀNG:
+──────────
+  1. Nhân viên lập phiếu nhập (phieunhap)
+  2. Chọn nhà cung cấp (nhacungcap), ngày nhập, ghi chú
+  3. Ghi chi tiết nhập (phieunhap_chitiet): loại sản phẩm, qty, giá nhập
+  4. Hệ thống cập nhật tồn kho: sanpham.SoLuong += SoLuongNhap
+  5. Ghi nhật ký: "NhapHang"
+
+XUẤT BÁO HÀNH:
+───────────────
+  1. Nhân viên tìm bảo hành theo: HoaDonID, SanPhamID, SoSerial
+  2. Kiểm tra: NgayHetHan > hôm nay → "Còn bảo hành" ✓
+  3. Xuất phiếu bảo hành cho khách + kỹ thuật viên
+
+═══════════════════════════════════════════════════════════════════════════════
+4. THÔNG SỐ & QUY TẮC DỮ LIỆU
+═══════════════════════════════════════════════════════════════════════════════
+
+ĐỊNH DẠNG DỮ LIỆU:
+──────────────────
+✓ Tên đăng nhập: 3-50 ký tự, chỉ chữ + số + _
+✓ Mật khẩu: Tối thiểu 6 ký tự, lưu ý BCRYPT hash
+✓ Điện thoại: 10 số, bắt đầu từ 0 (định dạng: 0xxxxxxxxx)
+✓ Email: Email hợp lệ (nếu có)
+✓ Số tiền (DECIMAL(15,0)): VND, nguyên số, không lẻ
+✓ Tỉ lệ (DECIMAL(5,2)): Phần trăm (0.00 - 100.00)
+✓ Lãi suất (DECIMAL(5,2)): % / tháng (1.0, 1.5, 2.0)
+
+KIỂM SOÁT TỒN KHO:
+──────────────────
+✓ sanpham.SoLuong: Cập nhật tự động
+  • Thêm: Khi có phieunhap
+  • Trừ: Khi tạo hoadon (CHỈ THANH TOÁN 100%)
+  • Trừ: Khi duyệt tragop (nếu quy tắc cho phép)
+✓ Không cho phép: Tạo hóa đơn nếu SoLuong < SoLuongBan
+
+HẠN BẢO HÀNH:
+──────────────
+✓ Mặc định: 2 năm (730 ngày)
+✓ Có thể thay đổi tuỳ loại sản phẩm
+
+GIỚI HẠN TRẢ GÓP:
+──────────────────
+✓ Kỳ hạn: 3-24 tháng (thường 6-12 tháng)
+✓ Lãi suất: 0.5% - 3.0% / tháng
+✓ Tỉ lệ trả trước: Tối thiểu 20% - 30% giá trị hóa đơn
+✓ Giới hạn: Mỗi khách tối đa 5 đơn trả góp đang xử lý
+
+═══════════════════════════════════════════════════════════════════════════════
+5. CÁC CHỈNH SỬA GẦN ĐÂY (PHIÊN BẢN HIỆN TẠI)
+═══════════════════════════════════════════════════════════════════════════════
+
+1. BẢNG khachhang:
+   ✓ Thêm cột: MatKhauHash (VARCHAR(255)) - để lưu BCRYPT hash
+   ⚠ Ghi chú: Cột MatKhau vẫn giữ để tương thích ngược
+   ⚠ Khi đăng ký mới: Lưu both MatKhau (old) + MatKhauHash (new)
+   
+2. BẢNG nhanvien:
+   ✓ Thêm cột: MatKhauHash (VARCHAR(255)) - để lưu BCRYPT hash
+   ✓ Thêm cột: NgayVaoLam (DATE) - ngày bắt đầu làm việc
+   ⚠ Ghi chú: Tương tự khachhang, cột MatKhau vẫn giữ
+   
+3. BẢNG tragop:
+   ✓ Thêm cột: SoTienConLai - số tiền còn lại sau trả trước
+   ✓ Thêm cột: TongPhaiTra - tổng tiền phải trả (gồm lãi)
+   ✓ Thêm cột: SoTienDaTra - số tiền đã trả tích lũy
+   ✓ Thêm cột: SoLanNhacNho - lần nhắc nợ
+   ✓ Thêm cột: TinhTrangTra - trạng thái ("Đang góp" / "Đã trả hết")
+   
+4. BẢNG nhatky_hethong:
+   ✓ Tạo mới: Ghi nhận mọi hành động trong hệ thống
+   
+5. BẢNG login_attempts (CHƯA TẠO):
+   • Cần tạo để hỗ trợ rate limiting (anti-brute-force)
+   • Cột: users_id, ip_address, attempt_time, attempt_status
+
+═══════════════════════════════════════════════════════════════════════════════
+6. MIGRATION SCRIPT
+═══════════════════════════════════════════════════════════════════════════════
+
+File: MIGRATION_HASH_PASSWORD.php
+Mục đích: Chạy 1 lần để hash password cũ từ plain text sang BCRYPT
+Thao tác:
+  1. Thêm cột MatKhauHash nếu chưa có
+  2. DFS: Khachhang - lấy MatKhau cũ
+  3. Hash: password_hash($matKhau, PASSWORD_BCRYPT)
+  4. Lưu: Vào MatKhauHash
+  5. Repeat cho nhanvien
+Khi chạy: Lần đầu sau khi cập nhật code (Production)
+
+═══════════════════════════════════════════════════════════════════════════════
+7. CÂU HỎI & GỢI Ý
+═══════════════════════════════════════════════════════════════════════════════
+
+Q: Làm sao biết sản phẩm nào hết hàng?
+→ Kiểm tra sanpham.SoLuong = 0, không cho phép thêm vào giỏ
+
+Q: Khách đã thanh toán nhưng quên hóa đơn làm sao?
+→ Tìm trong hoadon theo KhachHangID, in lại hóa đơn
+
+Q: Cần tìm tất cả TV OLED hiện còn của hãng LG?
+→ SELECT * FROM sanpham 
+   WHERE LoaiSanPhamID = 4 (OLED)
+   AND HangSanXuatID = 3 (LG)
+   AND SoLuong > 0
+
+Q: Khách nào dùng dịch vụ trả góp nhiều nhất?
+→ SELECT KhachHangID, COUNT(*) FROM tragop GROUP BY KhachHangID
+
+Q: Tháng này bán bao nhiêu tiền?
+→ SELECT SUM(DonGiaBan * SoLuongBan) FROM hoadon_chitiet
+   JOIN hoadon ON hoadon.ID = hoadon_chitiet.HoaDonID
+   WHERE MONTH(hoadon.NgayLap) = MONTH(NOW())
+
+Q: Sản phẩm nào có tồn kho ít nhất?
+→ SELECT * FROM sanpham ORDER BY SoLuong ASC LIMIT 5
+
+═══════════════════════════════════════════════════════════════════════════════

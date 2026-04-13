@@ -3,6 +3,30 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// === ĐỊNH NGHĨA SESSION TIMEOUT ===
+define('SESSION_TIMEOUT', 1800); // 30 phút (tính bằng giây)
+
+// === HÀM KIỂM TRA SESSION TIMEOUT ===
+function checkSessionTimeout() {
+    // Nếu chưa có session_start_time thì khởi tạo
+    if (!isset($_SESSION['session_start_time'])) {
+        $_SESSION['session_start_time'] = time();
+        return true; // Session mới, không timeout
+    }
+
+    $elapsed = time() - $_SESSION['session_start_time'];
+    if ($elapsed > SESSION_TIMEOUT) {
+        // Session hết hạn, xóa toàn bộ session
+        session_unset();
+        session_destroy();
+        return false; // Session timeout
+    }
+
+    // Session còn hạn, cập nhật lại thời gian
+    $_SESSION['session_start_time'] = time();
+    return true;
+}
+
 function ghiNhatKy($conn, $loaiNguoiDung, $nguoiDungID, $tenDangNhap, $hoTen, $hanhDong, $bangTacDong = null, $banGhiID = null, $moTa = null, $trangThai = 'ThanhCong')
 {
     $ip = $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN';

@@ -2,6 +2,7 @@
 session_start();
 require_once 'thu_vien/connect.php';
 require_once 'thu_vien/nhatky_helper.php';
+require_once 'thu_vien/rate_limit_helper.php';
 
 if (isset($_SESSION['khach_hang_id'])) {
     header("Location: thanh_toan.php");
@@ -23,8 +24,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if ($tenDangNhap === '' || $matKhau === '') {
         $thongBao = "Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu!";
         $loaiThongBao = "danger";
+    } elseif (isRateLimited($conn, $tenDangNhap)) {
+        // ===== KIỂM TRA RATE LIMITING =====
+        $limitStatus = getRateLimitStatus($conn, $tenDangNhap);
+        $thongBao = "⛔ Tài khoản đã bị khóa tạm thời do quá nhiều lần đăng nhập thất bại.<br>";
+        $thongBao .= "Vui lòng thử lại sau " . (LOCKOUT_DURATION / 60) . " phút.";
+        $loaiThongBao = "danger";
     } else {
-        $sql = "SELECT ID, HoVaTen, TenDangNhap, MatKhau
+        $sql = "SELECT ID, HoVaTen, TenDangNhap, MatKhau, MatKhauHash
                 FROM khachhang
                 WHERE TenDangNhap = ?
                 LIMIT 1";
@@ -36,13 +43,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $result = $stmt->get_result();
 
             if ($row = $result->fetch_assoc()) {
-                if ($matKhau === $row['MatKhau']) {
+                // === KIỂM TRA PASSWORD ===
+                $passwordValid = false;
+                
+                // Nếu có MatKhauHash thì dùng password_verify
+                if (!empty($row['MatKhauHash'])) {
+                    $passwordValid = password_verify($matKhau, $row['MatKhauHash']);
+                } else if (!empty($row['MatKhau'])) {
+                    // Fallback: so sánh plain text (legacy support)
+                    $passwordValid = ($matKhau === $row['MatKhau']);
+                }
+                
+                if ($passwordValid) {
                     $_SESSION['khach_hang_id'] = (int)$row['ID'];
-                    $_SESSION['khachhang_id'] = (int)$row['ID']; // alias
                     $_SESSION['khach_hang_ten'] = $row['HoVaTen'];
-                    $_SESSION['khachhang_hoten'] = $row['HoVaTen']; // alias
                     $_SESSION['khach_hang_tendangnhap'] = $row['TenDangNhap'];
-                    $_SESSION['khachhang_tendangnhap'] = $row['TenDangNhap']; // alias
 
                     ghiNhatKy(
                         $conn,
@@ -57,11 +72,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         'ThanhCong'
                     );
 
+                    // ===== GHI LẠI LOGIN ATTEMPT (SUCCESS) =====
+                    recordLoginAttempt($conn, $tenDangNhap, 'success');
+
                     header("Location: thanh_toan.php");
                     exit();
                 } else {
                     $thongBao = "Mật khẩu không chính xác!";
                     $loaiThongBao = "danger";
+                    
+                    // ===== GHI LẠI LOGIN ATTEMPT (FAIL) =====
+                    recordLoginAttempt($conn, $tenDangNhap, 'fail');
 
                     ghiNhatKy(
                         $conn,
@@ -79,6 +100,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             } else {
                 $thongBao = "Tài khoản không tồn tại!";
                 $loaiThongBao = "danger";
+                
+                // ===== GHI LẠI LOGIN ATTEMPT (FAIL) =====
+                recordLoginAttempt($conn, $tenDangNhap, 'fail');
 
                 ghiNhatKy(
                     $conn,

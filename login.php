@@ -12,22 +12,53 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if ($username === '' || $password === '') {
         $error = "Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu!";
     } else {
-        // ĐÃ SỬA: Thêm cột NgayVaoLam vào câu lệnh SQL
-        $sql = "SELECT ID, HoVaTen, TenDangNhap, QuyenHan, NgayVaoLam
+        // ĐÃ SỬA: Query lấy MatKhauHash + MatKhau (legacy)
+        $sql = "SELECT ID, HoVaTen, TenDangNhap, QuyenHan, NgayVaoLam, MatKhau, MatKhauHash
                 FROM nhanvien
-                WHERE TenDangNhap = ? AND MatKhau = ?
+                WHERE TenDangNhap = ?
                 LIMIT 1";
         $stmt = $conn->prepare($sql);
 
         if ($stmt) {
-            $stmt->bind_param("ss", $username, $password);
+            $stmt->bind_param("s", $username);
             $stmt->execute();
             $result = $stmt->get_result();
 
             if ($result && $result->num_rows > 0) {
                 $row = $result->fetch_assoc();
 
-                // Lưu các session chung cho mọi nhân viên
+                // === KIỂM TRA PASSWORD ===
+                $passwordValid = false;
+                
+                // Nếu có MatKhauHash thì dùng password_verify
+                if (!empty($row['MatKhauHash'])) {
+                    $passwordValid = password_verify($password, $row['MatKhauHash']);
+                } else if (!empty($row['MatKhau'])) {
+                    // Fallback: so sánh plain text (legacy support)
+                    $passwordValid = ($password === $row['MatKhau']);
+                }
+                
+                if (!$passwordValid) {
+                    $error = "Tên đăng nhập hoặc mật khẩu không đúng!";
+
+                    ghiNhatKy(
+                        $conn,
+                        'NhanVien',
+                        null,
+                        $username,
+                        null,
+                        'DangNhap',
+                        'nhanvien',
+                        null,
+                        'Đăng nhập thất bại',
+                        'ThatBai'
+                    );
+
+                    $stmt->close();
+                } else {
+                    // ===== PASSWORD ĐÚNG, LƯU SESSION =====
+
+                    // Lưu các session chung cho mọi nhân viên
                 $_SESSION['nhanvien_id'] = (int)$row['ID'];
                 $_SESSION['nhan_vien_id'] = (int)$row['ID']; 
                 $_SESSION['nhanvien_hoten'] = $row['HoVaTen'];
@@ -72,6 +103,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                 header("Location: admin/index.php");
                 exit();
+                } // Close: if (!$passwordValid) else
             } else {
                 $error = "Tên đăng nhập hoặc mật khẩu không đúng!";
 
