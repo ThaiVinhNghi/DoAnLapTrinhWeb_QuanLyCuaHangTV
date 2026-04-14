@@ -183,6 +183,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <div class="text-center mt-4">
                 <span class="text-muted small">Chưa có tài khoản?</span> 
                 <a href="dang_ky.php" class="text-danger fw-bold text-decoration-none">Đăng ký ngay</a>
+                <br>
+                <a href="doi_mat_khau.php" class="text-secondary fw-bold text-decoration-none mt-2 d-inline-block"><i class="bi bi-key"></i> Đổi mật khẩu</a>
             </div>
         </form>
     </div>

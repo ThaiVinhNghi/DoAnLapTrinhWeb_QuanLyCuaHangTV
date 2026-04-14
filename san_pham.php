@@ -82,6 +82,7 @@ switch ($loc_gia_noibat) {
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-3">
                                 <li><a class="dropdown-item" href="san_pham.php#san-pham-da-mua">Đơn hàng của tôi</a></li>
+                                <li><a class="dropdown-item" href="doi_mat_khau.php">Đổi mật khẩu</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item text-danger fw-bold" href="logout_khach.php">Đăng xuất</a></li>
                             </ul>
