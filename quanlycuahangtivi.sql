@@ -625,6 +625,20 @@ CREATE TABLE nhatky_hethong (
 );
 ALTER TABLE `nhanvien` 
 ADD `NgayVaoLam` DATE NULL DEFAULT CURRENT_DATE() COMMENT 'Ngày bắt đầu làm việc';
+ALTER TABLE hoadon 
+ADD TrangThai TINYINT(1) NOT NULL DEFAULT 0 
+COMMENT '0: Chờ duyệt, 1: Đã duyệt/Đang giao, 2: Đã hoàn thành, 3: Đã hủy';
+CREATE TABLE login_attempts (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    ip_address VARCHAR(45) NOT NULL,
+    username VARCHAR(100),
+    attempt_time DATETIME NOT NULL,
+    status ENUM('fail', 'success'),
+    INDEX idx_ip_time (ip_address, attempt_time),
+    INDEX idx_username_time (username, attempt_time)
+);
+ALTER TABLE khachhang ADD COLUMN MatKhauHash VARCHAR(255) NULL;
+ALTER TABLE nhanvien ADD COLUMN MatKhauHash VARCHAR(255) NULL;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
