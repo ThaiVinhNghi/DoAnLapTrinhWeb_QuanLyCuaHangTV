@@ -164,8 +164,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </div>
             
             <div class="mb-4">
-                <label for="MatKhau" class="form-label fw-bold text-secondary small">MẬT KHẨU</label>
-                <div class="input-group">
+                <div class="d-flex justify-content-between align-items-center">
+                    <label for="MatKhau" class="form-label fw-bold text-secondary small mb-0">MẬT KHẨU</label>
+                    <a href="quen_mat_khau_khach.php" class="text-decoration-none small text-danger fw-bold">Quên mật khẩu?</a>
+                </div>
+                <div class="input-group mt-2">
                     <span class="input-group-text bg-white border-end-0 text-muted rounded-start-3"><i class="bi bi-key-fill"></i></span>
                     <input type="password" class="form-control border-start-0 rounded-end-3" id="MatKhau" name="MatKhau" required placeholder="Nhập mật khẩu...">
                 </div>

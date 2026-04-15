@@ -223,6 +223,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['nhac_nho'])) {
 // =========================
 // 4. LẤY THÔNG TIN HỒ SƠ
 // =========================
+// CÂU LỆNH NÀY SẼ TỰ ĐỘNG LẤY 2 CỘT CCCD VÀ NgaySinh TỪ BẢNG tragop DO ĐÃ DÙNG tg.*
 $sql = "SELECT tg.*, kh.HoVaTen, kh.DienThoai, kh.DiaChi
         FROM tragop tg
         JOIN khachhang kh ON tg.KhachHangID = kh.ID
@@ -301,6 +302,28 @@ $conNo = max(0, $traGop['TongPhaiTra'] - $traGop['SoTienDaTra']);
                     <p><strong>Họ tên:</strong> <?php echo htmlspecialchars($traGop['HoVaTen']); ?></p>
                     <p><strong>Điện thoại:</strong> <?php echo htmlspecialchars($traGop['DienThoai']); ?></p>
                     <p><strong>Địa chỉ:</strong> <?php echo htmlspecialchars($traGop['DiaChi']); ?></p>
+                    
+                    <hr class="text-muted opacity-25">
+                    
+                    <p class="mb-2 text-danger">
+                        <strong><i class="bi bi-person-vcard"></i> Số CCCD/CMND:</strong> 
+                        <span class="fw-bold">
+                            <?php echo !empty($traGop['CCCD']) ? htmlspecialchars($traGop['CCCD']) : 'Chưa cung cấp'; ?>
+                        </span>
+                    </p>
+
+                    <p class="mb-0 text-danger">
+                        <strong><i class="bi bi-calendar-date"></i> Ngày sinh:</strong> 
+                        <span class="fw-bold">
+                            <?php 
+                                if (!empty($traGop['NgaySinh'])) {
+                                    echo date('d/m/Y', strtotime($traGop['NgaySinh']));
+                                } else {
+                                    echo 'Chưa cung cấp';
+                                }
+                            ?>
+                        </span>
+                    </p>
                 </div>
             </div>
         </div>

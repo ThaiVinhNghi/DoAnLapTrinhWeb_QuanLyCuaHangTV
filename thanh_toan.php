@@ -161,6 +161,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $soTienTraTruoc = isset($_POST['SoTienTraTruoc']) ? (float)$_POST['SoTienTraTruoc'] : 0;
             $soThangTraGop = isset($_POST['SoThangTraGop']) ? (int)$_POST['SoThangTraGop'] : 6;
             $laiSuat = isset($_POST['LaiSuat']) ? (float)$_POST['LaiSuat'] : 1.5;
+            
+            // Nhận dữ liệu CCCD và Ngày sinh từ form (có thể dùng để cập nhật vào bảng nếu cần)
+            $cccd = isset($_POST['CCCD']) ? trim($_POST['CCCD']) : '';
+            $ngaySinh = isset($_POST['NgaySinh']) ? trim($_POST['NgaySinh']) : '';
 
             if ($soTienTraTruoc < 0) {
                 throw new Exception("Số tiền trả trước không hợp lệ.");
@@ -179,24 +183,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
 
             $soTienConLai = $tongTienGioHang - $soTienTraTruoc;
-            // === CÔNG THỨC LÃI SUẤT CHÍNH XÁC ===
-            // Lãi suất hàng tháng từ $laiSuat (%), tính cho $soThangTraGop tháng
             $tongPhaiTra = $soTienConLai + ($soTienConLai * $laiSuat / 100 / 12 * $soThangTraGop);
-            // Ví dụ: 10M, 1.5%/năm = 0.125%/tháng, 6 tháng → 75k lãi
             $tienGopMoiThang = $tongPhaiTra / $soThangTraGop;
             $soTienDaTra = 0;
             $soLanNhacNho = 0;
             $trangThai = 'Chờ duyệt';
             $tinhTrangTra = 'Chờ duyệt';
 
+            // Bỏ việc gộp vào Ghi chú, giờ chúng ta lưu thẳng vào 2 cột mới tạo
             $sql_tragop = "INSERT INTO tragop
-                (KhachHangID, NgayDangKy, SoTienTraTruoc, SoThangTraGop, LaiSuat, TongTien, SoTienConLai, TongPhaiTra, TienGopMoiThang, SoTienDaTra, SoLanNhacNho, GhiChu, TrangThai, TinhTrangTra)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                (KhachHangID, CCCD, NgaySinh, NgayDangKy, SoTienTraTruoc, SoThangTraGop, LaiSuat, TongTien, SoTienConLai, TongPhaiTra, TienGopMoiThang, SoTienDaTra, SoLanNhacNho, GhiChu, TrangThai, TinhTrangTra)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
             $stmt_tg = $conn->prepare($sql_tragop);
             $stmt_tg->bind_param(
-                "isdidddddissss",
+                "isssdidddddissss", // Thêm 2 chữ 's' (string) cho CCCD và NgaySinh
                 $khachHangID,
+                $cccd,              // Lưu trực tiếp vào cột CCCD
+                $ngaySinh,          // Lưu trực tiếp vào cột NgaySinh
                 $ngayLap,
                 $soTienTraTruoc,
                 $soThangTraGop,
@@ -207,7 +211,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $tienGopMoiThang,
                 $soTienDaTra,
                 $soLanNhacNho,
-                $ghiChu,
+                $ghiChu,            // Trả lại sự trong sáng cho cột GhiChu
                 $trangThai,
                 $tinhTrangTra
             );
@@ -311,18 +315,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <link rel="stylesheet" href="tai_nguyen/css/style.css">
-    <script>
-        function toggleTraGopBox() {
-            const traGop = document.getElementById('tragop');
-            const boxTraGop = document.getElementById('boxTraGop');
-            // Kiểm tra xem phần tử có tồn tại không trước khi xử lý (Phòng trường hợp bị disabled)
-            if(traGop && boxTraGop) {
-                boxTraGop.style.display = traGop.checked ? 'block' : 'none';
-            }
-        }
-    </script>
 </head>
-<body onload="toggleTraGopBox()">
+<body>
 
     <nav class="navbar navbar-expand-lg navbar-dark navbar-premium sticky-top">
         <div class="container">
@@ -369,7 +363,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             Hệ thống sẽ sử dụng thông tin giao hàng trong hồ sơ tài khoản của bạn.
                         </p>
 
-                        <form action="" method="POST">
+                        <form action="" method="POST" onsubmit="return validateThanhToan()">
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Hình thức thanh toán</label>
 
@@ -390,7 +384,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                         <?php endif; ?>
                                     </label>
                                 </div>
-                                </div>
+                            </div>
 
                             <div id="boxTraGop" style="display:none;">
                                 <div class="border rounded p-3 mb-3 bg-light">
@@ -416,10 +410,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                         <label class="form-label">Lãi suất (% / năm)</label>
                                         <input type="number" id="laiSuat" step="0.1" name="LaiSuat" class="form-control" value="1.5" oninput="calculateInstallment()">
                                     </div>
-
+                                    
+                                    <div class="row g-3 mb-3 mt-1 border-top pt-3">
+                                        <h6 class="fw-bold text-primary mb-1"><i class="bi bi-person-vcard"></i> Thông tin pháp lý (Bắt buộc)</h6>
+                                        
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Số CCCD / CMND <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" name="CCCD" id="cccd" placeholder="Nhập 9-12 số" maxlength="12">
+                                        </div>
+                                        
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Ngày tháng năm sinh <span class="text-danger">*</span></label>
+                                            <input type="date" class="form-control" name="NgaySinh" id="ngay_sinh" onchange="kiemTraTuoiHopLe()">
+                                            <small id="thong_bao_tuoi" class="text-danger fw-bold d-none mt-1">
+                                                <i class="bi bi-x-circle"></i> Bạn chưa đủ 18 tuổi!
+                                            </small>
+                                        </div>
+                                    </div>
                                     <hr>
 
-                                    <!-- ===== HIỂN THỊ TÍNH TOÁN REAL-TIME ===== -->
                                     <div id="resultBox" style="display:none;" class="alert alert-info rounded p-3">
                                         <div class="mb-2">
                                             <span>Số tiền còn lại trả:</span>
@@ -448,7 +457,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                 <textarea name="GhiChuHoaDon" class="form-control bg-light" rows="4" placeholder="Ví dụ: Giao hàng vào giờ hành chính, bọc kỹ hàng giúp mình..."></textarea>
                             </div>
 
-                            <button type="submit" class="btn btn-success w-100 fs-5 py-2 fw-bold shadow-sm">
+                            <button type="submit" id="btnDatHang" class="btn btn-success w-100 fs-5 py-2 fw-bold shadow-sm">
                                 XÁC NHẬN ĐẶT HÀNG
                             </button>
                         </form>
@@ -510,13 +519,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <?php endif; ?>
 </div>
 
-</body>
-</html>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-// ===== JAVASCRIPT TÍNH TOÁN REAL-TIME TRẢ GÓP =====
+// ===== JAVASCRIPT TÍNH TOÁN & VALIDATION =====
 const TONG_TIEN_GIO_HANG = <?php echo $tongTienGioHang; ?>;
 
+// 1. Tắt/Bật vùng Trả góp
 function toggleTraGopBox() {
     const tragop = document.getElementById('tragop');
     const boxTraGop = document.getElementById('boxTraGop');
@@ -524,18 +533,23 @@ function toggleTraGopBox() {
     if (tragop.checked) {
         boxTraGop.style.display = 'block';
         calculateInstallment();
+        kiemTraTuoiHopLe(); // Chạy lại kiểm tra khi bật trả góp lên
     } else {
         boxTraGop.style.display = 'none';
         document.getElementById('resultBox').style.display = 'none';
+        
+        // Nếu chọn thanh toán hết thì mở khóa nút đặt hàng luôn
+        const btnDatHang = document.getElementById('btnDatHang');
+        if(btnDatHang) btnDatHang.disabled = false;
     }
 }
 
+// 2. Tính toán tiền trả góp Real-time
 function calculateInstallment() {
     const soTienTraTruoc = parseFloat(document.getElementById('soTienTraTruoc').value) || 0;
     const soThangTraGop = parseInt(document.getElementById('soThangTraGop').value) || 6;
     const laiSuat = parseFloat(document.getElementById('laiSuat').value) || 1.5;
     
-    // Validate input
     if (soTienTraTruoc < 0 || soTienTraTruoc > TONG_TIEN_GIO_HANG) {
         document.getElementById('resultBox').style.display = 'none';
         return;
@@ -546,13 +560,11 @@ function calculateInstallment() {
     const tongPhaiTra = soTienConLai + tienLai;
     const tienGopMoiThang = tongPhaiTra / soThangTraGop;
     
-    // Update display
     document.getElementById('soTienConLai').textContent = formatCurrency(soTienConLai);
     document.getElementById('tienLai').textContent = formatCurrency(tienLai);
     document.getElementById('tongPhaiTra').textContent = formatCurrency(tongPhaiTra);
     document.getElementById('tienGopMoiThang').textContent = formatCurrency(tienGopMoiThang);
     
-    // Show result box
     document.getElementById('resultBox').style.display = 'block';
 }
 
@@ -560,7 +572,70 @@ function formatCurrency(value) {
     return Math.floor(value).toLocaleString('vi-VN') + ' đ';
 }
 
-// Toggle on page load if tragop was selected
+// 3. Kiểm tra Tuổi (> 18 tuổi)
+function kiemTraTuoiHopLe() {
+    const inputNgaySinh = document.getElementById('ngay_sinh').value;
+    const thongBaoLoi = document.getElementById('thong_bao_tuoi');
+    const btnDatHang = document.getElementById('btnDatHang');
+
+    // Nếu chưa chọn ngày sinh thì chưa làm gì cả
+    if (!inputNgaySinh) return false;
+
+    const ngaySinh = new Date(inputNgaySinh);
+    const homNay = new Date();
+    
+    let tuoi = homNay.getFullYear() - ngaySinh.getFullYear();
+    const thang = homNay.getMonth() - ngaySinh.getMonth();
+    
+    // Nếu chưa tới tháng sinh, hoặc bằng tháng nhưng chưa tới ngày thì trừ đi 1 tuổi
+    if (thang < 0 || (thang === 0 && homNay.getDate() < ngaySinh.getDate())) {
+        tuoi--;
+    }
+
+    if (tuoi < 18) {
+        // Chưa đủ tuổi: Hiện cảnh báo đỏ, KHÓA nút gửi
+        thongBaoLoi.classList.remove('d-none');
+        if(btnDatHang) btnDatHang.disabled = true;
+        return false;
+    } else {
+        // Đủ tuổi: Ẩn thông báo, MỞ nút gửi
+        thongBaoLoi.classList.add('d-none');
+        if(btnDatHang) btnDatHang.disabled = false;
+        return true;
+    }
+}
+
+// 4. Kiểm tra Validation cuối cùng khi Submit Form
+function validateThanhToan() {
+    const tragop = document.getElementById('tragop');
+    
+    // Chỉ kiểm tra pháp lý nếu khách hàng chọn Mua Trả Góp
+    if (tragop && tragop.checked) {
+        const cccd = document.getElementById('cccd').value.trim();
+        const ngaySinh = document.getElementById('ngay_sinh').value;
+
+        if (!cccd || cccd.length < 9) {
+            alert('Vui lòng nhập số CCCD / CMND hợp lệ!');
+            document.getElementById('cccd').focus();
+            return false;
+        }
+
+        if (!ngaySinh) {
+            alert('Vui lòng cung cấp ngày tháng năm sinh để xác minh!');
+            document.getElementById('ngay_sinh').focus();
+            return false;
+        }
+
+        if (!kiemTraTuoiHopLe()) {
+            alert('Bạn phải từ đủ 18 tuổi trở lên để tham gia mua trả góp!');
+            return false;
+        }
+    }
+    
+    return true; // OK cho đi tiếp
+}
+
+// Chạy hàm kiểm tra ngay khi load lại trang
 document.addEventListener('DOMContentLoaded', function() {
     const tragop = document.getElementById('tragop');
     if (tragop && tragop.checked) {
@@ -568,3 +643,5 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+</body>
+</html>
