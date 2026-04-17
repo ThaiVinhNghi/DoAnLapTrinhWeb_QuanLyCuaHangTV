@@ -18,8 +18,11 @@ if ($sp_id <= 0 || $hd_id <= 0) {
 }
 
 // 2. Kiểm tra xem Hóa đơn này có đúng là của khách hàng này không?
-// (Đã xóa cột TrangThai trong câu lệnh SQL để tránh lỗi cơ sở dữ liệu)
-$sql_check_hd = "SELECT ID FROM hoadon WHERE ID = ? AND KhachHangID = ?";
+//    - Lấy thêm `NhanVienID` và `TrangThai` để biết đơn đã được admin duyệt hoặc đã hoàn thành hay chưa.
+//    - Nếu hóa đơn này là HỒ SƠ TRẢ GÓP (tragop.HoaDonID = hoadon.ID) thì *không* cho phép đánh giá.
+//      (Quy định: khách mua trả góp không được đánh giá sản phẩm.)
+//    Ghi chú: trước đây mã chỉ SELECT ID nên dùng $hoadon['TrangThai'] gây lỗi khi trường không được lấy.
+$sql_check_hd = "SELECT ID, NhanVienID, TrangThai, GhiChuHoaDon FROM hoadon WHERE ID = ? AND KhachHangID = ?";
 $stmt_hd = $conn->prepare($sql_check_hd);
 $stmt_hd->bind_param("ii", $hd_id, $kh_id);
 $stmt_hd->execute();
@@ -29,13 +32,31 @@ if ($rs_hd->num_rows == 0) {
     echo "<script>alert('Không tìm thấy hóa đơn của bạn!'); window.location.href='san_pham.php#san-pham-da-mua';</script>";
     exit();
 }
-$stmt_hd->close();
-
-
 
 $hoadon = $rs_hd->fetch_assoc();
-if ($hoadon['TrangThai'] != 2) { 
-    echo "<script>alert('Đơn hàng của bạn đang được xử lý. Bạn chỉ có thể đánh giá sau khi đơn hàng đã được giao thành công!'); window.location.href='san_pham.php#san-pham-da-mua';</script>";
+$stmt_hd->close();
+
+// Kiểm tra nếu HÓA ĐƠN này liên quan đến trả góp -> không cho đánh giá
+$sql_check_tg = "SELECT ID, TinhTrangTra FROM tragop WHERE HoaDonID = ? LIMIT 1";
+$stmt_tg = $conn->prepare($sql_check_tg);
+$stmt_tg->bind_param("i", $hd_id);
+$stmt_tg->execute();
+$res_tg = $stmt_tg->get_result();
+if ($res_tg && $res_tg->num_rows > 0) {
+    // Nếu tồn tại bản ghi trả góp gắn với hóa đơn này thì chặn đánh giá
+    echo "<script>alert('Không thể đánh giá sản phẩm mua trả góp.'); window.location.href='san_pham.php#san-pham-da-mua';</script>";
+    $stmt_tg->close();
+    exit();
+}
+$stmt_tg->close();
+
+// Cho phép đánh giá khi một trong các điều kiện sau đúng:
+// - Đã có nhân viên duyệt hóa đơn (NhanVienID != NULL) => admin đã duyệt
+// - Hoặc trạng thái hóa đơn = 2 (Đã hoàn thành) nếu hệ thống dùng trạng thái này
+$daDuyet = (isset($hoadon['NhanVienID']) && !empty($hoadon['NhanVienID'])) || (isset($hoadon['TrangThai']) && (int)$hoadon['TrangThai'] === 2);
+
+if (!$daDuyet) {
+    echo "<script>alert('Đơn hàng của bạn đang được xử lý. Bạn chỉ có thể đánh giá sau khi đơn hàng đã được duyệt hoặc hoàn thành!'); window.location.href='san_pham.php#san-pham-da-mua';</script>";
     exit();
 }
 

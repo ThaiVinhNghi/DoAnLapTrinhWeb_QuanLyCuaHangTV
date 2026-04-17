@@ -220,6 +220,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $id_tragop = $conn->insert_id;
             $stmt_tg->close();
 
+            // 1) Lưu chi tiết trả góp và cập nhật tồn kho (giữ nguyên)
             foreach ($_SESSION['gio_hang'] as $id_sp => $so_luong) {
                 $id_sp = (int)$id_sp;
                 $so_luong = (int)$so_luong;
@@ -235,7 +236,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
 
                 $giaGoc = (float)$row_sp['DonGia'];
-                $soLuongTon = (int)$row_sp['SoLuong'];
+                $soLuongTon = isset($row_sp['SoLuong']) ? (int)$row_sp['SoLuong'] : 0;
                 $phanTram = isset($row_sp['PhanTramGiam']) ? (float)$row_sp['PhanTramGiam'] : 0;
                 $donGiaBanThucTe = $giaGoc - ($giaGoc * $phanTram / 100);
                 $thanhTien = $donGiaBanThucTe * $so_luong;
@@ -260,6 +261,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $stmt_update->close();
             }
 
+            // Hoàn tất transaction sau khi đã tạo tragop + chi tiết trả góp
+            // (Luồng nghiệp vụ: chỉ tạo hồ sơ trả góp khi khách đăng ký. Hoá đơn và phiếu bảo hành
+            //  sẽ được tạo khi admin DUYỆT hồ sơ trả góp trong `admin/tra_gop_chi_tiet.php`.)
             $conn->commit();
 
             ghiNhatKyKhachHangTuSession(

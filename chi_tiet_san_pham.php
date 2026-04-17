@@ -174,7 +174,76 @@ $giaBanThucTe = $giaGoc - ($giaGoc * $phanTram / 100);
         </div>
     </div>
 
-    <a href="https://zalo.me/0931082845" target="_blank" class="position-fixed bottom-0 end-0 m-4 bg-success rounded-circle shadow-lg d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; z-index: 1000;">
+            </div>
+
+            <?php
+            // --- Hiển thị phần ĐÁNH GIÁ công khai cho sản phẩm ---
+            // Mục tiêu: mọi khách truy cập đều thấy các đánh giá (không chỉ người mua).
+            // Bước 1: Lấy tổng đánh giá và điểm trung bình
+            $sql_reviews_count = "SELECT COUNT(*) AS total, AVG(DiemDanhGia) AS avgRating FROM DanhGia WHERE SanPhamID = ?";
+            $stmt_rev = $conn->prepare($sql_reviews_count);
+            $stmt_rev->bind_param("i", $id);
+            $stmt_rev->execute();
+            $res_rev = $stmt_rev->get_result();
+            $row_rev = $res_rev->fetch_assoc();
+            $totalReviews = isset($row_rev['total']) ? (int)$row_rev['total'] : 0;
+            $avgRating = isset($row_rev['avgRating']) && $row_rev['avgRating'] !== null ? round((float)$row_rev['avgRating'], 1) : 0;
+            $stmt_rev->close();
+
+            // Bước 2: Lấy danh sách đánh giá (mới nhất trước)
+            $sql_reviews = "SELECT dg.DiemDanhGia, dg.NoiDung, dg.NgayDanhGia, k.HoVaTen
+                            FROM DanhGia dg
+                            LEFT JOIN khachhang k ON dg.KhachHangID = k.ID
+                            WHERE dg.SanPhamID = ?
+                            ORDER BY dg.NgayDanhGia DESC";
+            $stmt_list = $conn->prepare($sql_reviews);
+            $stmt_list->bind_param("i", $id);
+            $stmt_list->execute();
+            $res_list = $stmt_list->get_result();
+            ?>
+
+            <div class="container mt-4 mb-5">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="m-0 fw-bold">Đánh giá sản phẩm</h5>
+                            <div class="text-end">
+                                <div class="fw-bold text-danger">Trung bình: <?php echo $avgRating; ?> <i class="bi bi-star-fill text-warning"></i></div>
+                                <small class="text-muted"><?php echo $totalReviews; ?> đánh giá</small>
+                            </div>
+                        </div>
+
+                        <?php if ($totalReviews === 0): ?>
+                            <div class="text-muted">Chưa có đánh giá nào — bạn có thể là người đầu tiên.</div>
+                        <?php else: ?>
+                            <?php while ($rev = $res_list->fetch_assoc()): ?>
+                                <div class="border-bottom py-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div class="fw-bold text-primary"><?php echo htmlspecialchars($rev['HoVaTen'] ? $rev['HoVaTen'] : 'Khách hàng'); ?></div>
+                                        <div class="text-warning">
+                                            <?php
+                                            // Hiển thị sao (đầy / rỗng)
+                                            $stars = (int)$rev['DiemDanhGia'];
+                                            for ($s = 1; $s <= 5; $s++) {
+                                                if ($s <= $stars) echo '<i class="bi bi-star-fill"></i>';
+                                                else echo '<i class="bi bi-star"></i>';
+                                            }
+                                            ?>
+                                        </div>
+                                    </div>
+                                    <p class="mb-1"><?php echo nl2br(htmlspecialchars($rev['NoiDung'])); ?></p>
+                                    <small class="text-muted"><?php echo date('H:i - d/m/Y', strtotime($rev['NgayDanhGia'])); ?></small>
+                                </div>
+                            <?php endwhile; ?>
+                        <?php endif; ?>
+
+                    </div>
+                </div>
+            </div>
+
+            <?php $stmt_list->close(); ?>
+
+            <a href="https://zalo.me/0931082845" target="_blank" class="position-fixed bottom-0 end-0 m-4 bg-success rounded-circle shadow-lg d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; z-index: 1000;">
         <svg xmlns="http://www.w3.org/2000/svg" width="35" height="35" fill="white" viewBox="0 0 16 16">
             <path d="M8 15c4.418 0 8-3.134 8-7s-3.582-7-8-7-8 3.134-8 7c0 1.76.743 3.37 1.97 4.6-.097 1.016-.417 2.13-.771 2.966-.079.186.074.394.273.362 2.256-.37 3.597-.938 4.18-1.234A9.06 9.06 0 0 0 8 15z" />
         </svg>

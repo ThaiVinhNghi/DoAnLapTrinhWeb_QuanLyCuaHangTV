@@ -58,6 +58,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['duyet_tragop'])) {
             $stmt_insert_hdct = $conn->prepare($sql_insert_hdct);
             $stmt_insert_hdct->bind_param("iiid", $id_hoadon_moi, $ct['SanPhamID'], $ct['SoLuong'], $ct['DonGia']);
             $stmt_insert_hdct->execute();
+            // --- Tự động tạo phiếu bảo hành khi admin duyệt hồ sơ trả góp ---
+            // Luồng nghiệp vụ: chỉ cấp phiếu bảo hành sau khi admin duyệt và tạo hóa đơn.
+            // Kiểm tra xem đã có bao nhiêu phiếu bảo hành cho (HoaDonID, SanPhamID) để tránh tạo trùng.
+            $sanPhamID = (int)$ct['SanPhamID'];
+            $soLuong = (int)$ct['SoLuong'];
+
+            $sql_dem = "SELECT COUNT(*) AS tong FROM baohanh WHERE HoaDonID = ? AND SanPhamID = ?";
+            $stmt_dem = $conn->prepare($sql_dem);
+            $stmt_dem->bind_param("ii", $id_hoadon_moi, $sanPhamID);
+            $stmt_dem->execute();
+            $row_dem = $stmt_dem->get_result()->fetch_assoc();
+            $soLuongDaCo = (int)$row_dem['tong'];
+
+            for ($i = $soLuongDaCo + 1; $i <= $soLuong; $i++) {
+                $ngayKichHoat = date('Y-m-d');
+                $ngayHetHan = date('Y-m-d', strtotime('+24 months'));
+                $soSerial = 'BH-' . $id_hoadon_moi . '-' . $sanPhamID . '-' . $i . '-' . strtoupper(substr(md5(uniqid()), 0, 5));
+
+                $sql_insert_bh = "INSERT INTO baohanh (HoaDonID, SanPhamID, SoSerial, NgayKichHoat, NgayHetHan, TrangThai)
+                                  VALUES (?, ?, ?, ?, ?, 'Đang bảo hành')";
+                $stmt_insert_bh = $conn->prepare($sql_insert_bh);
+                $stmt_insert_bh->bind_param("iisss", $id_hoadon_moi, $sanPhamID, $soSerial, $ngayKichHoat, $ngayHetHan);
+                $stmt_insert_bh->execute();
+            }
+            $stmt_dem->close();
+            if (isset($stmt_insert_bh)) $stmt_insert_bh->close();
         }
 
         $trangThaiMoi = 'Đã chuyển hóa đơn';
