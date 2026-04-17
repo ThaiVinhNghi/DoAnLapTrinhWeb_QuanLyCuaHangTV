@@ -16,9 +16,11 @@ $result = $conn->query($sql);
 <div class="col-md-9 col-lg-10 mb-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h3 class="text-primary fw-bold"><i class="bi bi-box-seam"></i> Lịch sử Nhập hàng</h3>
-        <a href="nhap_hang_them.php" class="btn btn-primary fw-bold">
-            <i class="bi bi-plus-lg"></i> Tạo Phiếu Nhập Mới
-        </a>
+        <?php if (isset($isAdmin) && $isAdmin): ?>
+            <a href="nhap_hang_them.php" class="btn btn-primary fw-bold">
+                <i class="bi bi-plus-lg"></i> Tạo Phiếu Nhập Mới
+            </a>
+        <?php endif; ?>
     </div>
 
     <div class="card shadow-sm border-0">

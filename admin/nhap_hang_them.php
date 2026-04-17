@@ -4,9 +4,9 @@ require_once '../thu_vien/connect.php';
 require_once 'header.php';
 require_once 'sidebar.php';
 
-// Kiểm tra đăng nhập
-if (!isset($_SESSION['nhanvien_id'])) {
-    header("Location: ../login.php");
+// Kiểm tra đăng nhập và quyền (chỉ Admin được tạo phiếu nhập)
+if (!isset($isAdmin) || !$isAdmin) {
+    header("Location: index.php");
     exit();
 }
 

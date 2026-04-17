@@ -53,8 +53,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         'Đăng nhập thất bại',
                         'ThatBai'
                     );
-
-                    $stmt->close();
                 } else {
                     // ===== PASSWORD ĐÚNG, LƯU SESSION =====
 

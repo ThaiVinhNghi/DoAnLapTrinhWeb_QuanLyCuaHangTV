@@ -27,10 +27,23 @@ $sql_khachhang = "SELECT COUNT(ID) as SoKhach FROM khachhang";
 $res_kh = $conn->query($sql_khachhang);
 $soKhachHang = ($res_kh && $row = $res_kh->fetch_assoc()) ? (int)$row['SoKhach'] : 0;
 
-// 4. Số Yêu Cầu Hỗ Trợ (Giả sử lấy số lượng Đơn Bảo Hành đang 'Chờ xử lý')
-$sql_hotro = "SELECT COUNT(ID) as SoYeuCau FROM baohanh WHERE TrangThai = 'Chờ xử lý'";
-$res_ht = $conn->query($sql_hotro);
-$soYeuCau = ($res_ht && $row = $res_ht->fetch_assoc()) ? (int)$row['SoYeuCau'] : 0;
+// 4a. Số phiếu bảo hành chờ xử lý
+$sql_baohanh = "SELECT COUNT(ID) as SoBaoHanh FROM baohanh WHERE TrangThai = 'Chờ xử lý'";
+$res_bh = $conn->query($sql_baohanh);
+$soBaoHanh = ($res_bh && $row = $res_bh->fetch_assoc()) ? (int)$row['SoBaoHanh'] : 0;
+
+// 4b. Số hóa đơn chờ duyệt (Những đơn chưa có NhanVienID)
+$sql_hoadon_cho = "SELECT COUNT(ID) as SoHoaDonCho FROM hoadon WHERE NhanVienID IS NULL OR NhanVienID = 0";
+$res_hd_cho = $conn->query($sql_hoadon_cho);
+$soHoaDonCho = ($res_hd_cho && $row = $res_hd_cho->fetch_assoc()) ? (int)$row['SoHoaDonCho'] : 0;
+
+// 4c. Số hồ sơ trả góp chờ duyệt
+$sql_tragop_cho = "SELECT COUNT(ID) as SoTraGopCho FROM tragop WHERE TrangThai = 'Chờ duyệt' OR TinhTrangTra = 'Chờ duyệt'";
+$res_tg_cho = $conn->query($sql_tragop_cho);
+$soTraGopCho = ($res_tg_cho && $row = $res_tg_cho->fetch_assoc()) ? (int)$row['SoTraGopCho'] : 0;
+
+// Tổng số mục chờ xử lý (gộp các loại)
+$tongChoXuLy = $soBaoHanh + $soHoaDonCho + $soTraGopCho;
 
 // 5. Lấy Danh Sách Sản Phẩm Bán Chạy Nhất (Top 5)
 $sql_banchay = "SELECT sp.ID, sp.TenSanPham, sp.HinhAnh, SUM(hc.SoLuongBan) as TongDaBan
@@ -119,7 +132,12 @@ include 'sidebar.php';
                 <div class="card-body p-4 d-flex align-items-center justify-content-between">
                     <div>
                         <h6 class="text-muted fw-bold text-uppercase mb-2" style="font-size: 0.75rem;">Chờ Xử Lý</h6>
-                        <h4 class="fw-bold text-danger m-0"><?php echo $soYeuCau; ?></h4>
+                        <h4 class="fw-bold text-danger m-0"><?php echo $tongChoXuLy; ?></h4>
+                        <div class="small text-muted mt-2">
+                            <div>Hóa đơn chờ duyệt: <strong class="text-dark"><?php echo $soHoaDonCho; ?></strong></div>
+                            <div>Trả góp chờ duyệt: <strong class="text-dark"><?php echo $soTraGopCho; ?></strong></div>
+                            <div>Bảo hành chờ xử lý: <strong class="text-dark"><?php echo $soBaoHanh; ?></strong></div>
+                        </div>
                     </div>
                     <div class="bg-danger bg-opacity-10 text-danger p-3 rounded-circle">
                         <i class="bi bi-headset fs-4"></i>
@@ -168,7 +186,9 @@ include 'sidebar.php';
             <div class="card shadow-sm border-0 rounded-4 h-100">
                 <div class="card-header bg-white border-0 pt-4 pb-0 d-flex justify-content-between align-items-center">
                     <h6 class="fw-bold m-0"><i class="bi bi-exclamation-circle-fill text-danger me-2"></i> Sản Phẩm Sắp Hết Hàng</h6>
-                    <a href="nhap_hang.php" class="text-decoration-none small text-danger">Tạo phiếu nhập</a>
+                    <?php if (isset($isAdmin) && $isAdmin): ?>
+                        <a href="nhap_hang.php" class="text-decoration-none small text-danger">Tạo phiếu nhập</a>
+                    <?php endif; ?>
                 </div>
                 <div class="card-body p-4">
                     <div class="list-group list-group-flush">

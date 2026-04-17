@@ -160,7 +160,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         elseif ($hinhThucThanhToan === 'tragop') {
             $soTienTraTruoc = isset($_POST['SoTienTraTruoc']) ? (float)$_POST['SoTienTraTruoc'] : 0;
             $soThangTraGop = isset($_POST['SoThangTraGop']) ? (int)$_POST['SoThangTraGop'] : 6;
-            $laiSuat = isset($_POST['LaiSuat']) ? (float)$_POST['LaiSuat'] : 1.5;
+            // Ép lãi suất cố định 1.5% trên server — không tin dữ liệu client để tránh bị sửa khi đặt hàng
+            $laiSuat = 1.5;
             
             // Nhận dữ liệu CCCD và Ngày sinh từ form (có thể dùng để cập nhật vào bảng nếu cần)
             $cccd = isset($_POST['CCCD']) ? trim($_POST['CCCD']) : '';
@@ -412,7 +413,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                                     <div class="mb-3">
                                         <label class="form-label">Lãi suất (% / năm)</label>
-                                        <input type="number" id="laiSuat" step="0.1" name="LaiSuat" class="form-control" value="1.5" oninput="calculateInstallment()">
+                                        <input type="number" id="laiSuat" step="0.1" name="LaiSuat" class="form-control" value="1.5" readonly>
+                                        <small class="text-muted">Lãi suất cố định 1.5% / năm</small>
                                     </div>
                                     
                                     <div class="row g-3 mb-3 mt-1 border-top pt-3">
