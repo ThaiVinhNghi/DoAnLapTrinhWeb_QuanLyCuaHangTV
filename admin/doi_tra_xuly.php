@@ -113,6 +113,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['duyet_yeucau'])) {
                 $stmt_xuat->bind_param("ii", $tongSoLuongDoi, $sp_moi_id);
                 $stmt_xuat->execute();
 
+                // Lưu sản phẩm mới vào bảng doitra để hiển thị cho khách
+                $sql_save_sp_moi = "UPDATE doitra SET SanPhamMoiID = ? WHERE ID = ?";
+                $stmt_save = $conn->prepare($sql_save_sp_moi);
+                if ($stmt_save) {
+                    $stmt_save->bind_param("ii", $sp_moi_id, $id_doitra);
+                    $stmt_save->execute();
+                    $stmt_save->close();
+                }
+
                 $ghiChuNhatKy = "Duyệt ĐỔI HÀNG #DT{$id_doitra}. Đã thu hồi SP cũ và xuất SP mới (ID: {$sp_moi_id}) giao cho khách.";
             }
 

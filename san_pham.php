@@ -295,19 +295,27 @@ switch ($loc_gia_noibat) {
                                     <th width="120" class="py-3 text-secondary text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;">Hình ảnh</th>
                                     <th class="py-3 text-secondary text-uppercase text-start" style="font-size: 0.8rem; letter-spacing: 1px;">Sản phẩm</th>
                                     <th width="120" class="py-3 text-secondary text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;">Mã HĐ</th>
-                                    <th width="120" class="py-3 text-secondary text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;">Ngày mua</th>
+                                    <th width="130" class="py-3 text-secondary text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;">Ngày mua</th>
                                     <th width="100" class="py-3 text-secondary text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;">SL</th>
-                                    <th width="280" class="py-3 text-secondary text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;">Tùy chọn</th>
+                                    <th width="100" class="py-3 text-secondary text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;">Trạng thái</th>
+                                    <th width="260" class="py-3 text-secondary text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;">Tùy chọn</th>
                                 </tr>
                             </thead>
                             <tbody class="border-top-0">
                                 <?php
                                 $kh_id = (int) $_SESSION['khach_hang_id'];
-                                $sql_damua = "SELECT sp.TenSanPham, sp.HinhAnh, hd.ID as HoaDonID, hd.NgayLap, hdct.SoLuongBan, sp.ID as SanPhamID, tg.ID as TraGopID, tg.TinhTrangTra
+                                // Lấy danh sách đơn hàng kèm thông tin đổi/trả và SP mới (nếu đã đổi)
+                                $sql_damua = "SELECT sp.TenSanPham, sp.HinhAnh, hd.ID as HoaDonID, hd.NgayLap, hd.NhanVienID,
+                                    hdct.SoLuongBan, sp.ID as SanPhamID,
+                                    tg.ID as TraGopID, tg.TinhTrangTra,
+                                    dt.ID as DoiTraID, dt.LoaiYeuCau,
+                                    sp_moi.TenSanPham as TenSPMoi
                                 FROM hoadon hd
                                 JOIN hoadon_chitiet hdct ON hd.ID = hdct.HoaDonID
                                 JOIN sanpham sp ON hdct.SanPhamID = sp.ID
                                 LEFT JOIN tragop tg ON hd.ID = tg.HoaDonID
+                                LEFT JOIN doitra dt ON hd.ID = dt.HoaDonID AND dt.KhachHangID = $kh_id
+                                LEFT JOIN sanpham sp_moi ON dt.SanPhamMoiID = sp_moi.ID
                                 WHERE hd.KhachHangID = $kh_id
                                 ORDER BY hd.ID DESC";
                                 $result_damua = $conn->query($sql_damua);
@@ -315,6 +323,21 @@ switch ($loc_gia_noibat) {
                                 if ($result_damua && $result_damua->num_rows > 0):
                                     while ($row_mua = $result_damua->fetch_assoc()):
                                         $img_mua = !empty($row_mua['HinhAnh']) ? "uploads/" . $row_mua['HinhAnh'] : "uploads/no-image.jpg";
+                                        
+                                        // Kiểm tra đã được admin duyệt chưa
+                                        $daDuyet = !empty($row_mua['NhanVienID']);
+                                        
+                                        // Kiểm tra đã đánh giá chưa
+                                        $sql_ck_dg = "SELECT ID FROM DanhGia WHERE HoaDonID = {$row_mua['HoaDonID']} AND SanPhamID = {$row_mua['SanPhamID']} AND KhachHangID = $kh_id LIMIT 1";
+                                        $res_ck_dg = $conn->query($sql_ck_dg);
+                                        $daDanhGia = ($res_ck_dg && $res_ck_dg->num_rows > 0);
+                                        
+                                        // Kiểm tra đã đổi/trả chưa
+                                        $daDoiTra = !empty($row_mua['DoiTraID']);
+                                        $loaiDoiTra = $row_mua['LoaiYeuCau'] ?? '';
+                                        $tenSPMoi = $row_mua['TenSPMoi'] ?? '';
+                                        
+                                        // Kiểm tra trả góp
                                         $duocDoiTra = true;
                                         if (!empty($row_mua['TraGopID']) && $row_mua['TinhTrangTra'] !== 'Đã tất toán') {
                                             $duocDoiTra = false;
@@ -322,27 +345,63 @@ switch ($loc_gia_noibat) {
                                         ?>
                                         <tr>
                                             <td class="py-3"><img src="<?php echo $img_mua; ?>" width="70" class="img-fluid rounded" alt="Tivi" style="mix-blend-mode: multiply;"></td>
-                                            <td class="text-start fw-bold text-dark py-3"><?php echo htmlspecialchars($row_mua['TenSanPham']); ?></td>
+                                            <td class="text-start fw-bold text-dark py-3">
+                                                <?php echo htmlspecialchars($row_mua['TenSanPham']); ?>
+                                                <?php if (!empty($tenSPMoi)): ?>
+                                                    <div class="mt-1">
+                                                        <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size:0.75rem;">
+                                                            <i class="bi bi-arrow-repeat"></i> Đổi thành: <?php echo htmlspecialchars($tenSPMoi); ?>
+                                                        </span>
+                                                    </div>
+                                                <?php endif; ?>
+                                            </td>
                                             <td class="text-secondary fw-bold py-3">#<?php echo $row_mua['HoaDonID']; ?></td>
                                             <td class="text-secondary py-3"><?php echo date('d/m/Y', strtotime($row_mua['NgayLap'])); ?></td>
                                             <td class="fw-bold text-secondary py-3"><?php echo (int) $row_mua['SoLuongBan']; ?></td>
                                             <td class="py-3">
+                                                <?php if (!$daDuyet): ?>
+                                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1 rounded-pill" style="font-size:0.75rem;">
+                                                        <i class="bi bi-hourglass-split"></i> Chờ xét duyệt
+                                                    </span>
+                                                <?php else: ?>
+                                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill" style="font-size:0.75rem;">
+                                                        <i class="bi bi-check-circle-fill"></i> Đã duyệt
+                                                    </span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td class="py-3">
                                                 <div class="d-flex flex-wrap gap-2 justify-content-center align-items-center">
-                                                    <?php if ($duocDoiTra): ?>
-                                                        <a href="doitra_yeucau.php?hd_id=<?php echo $row_mua['HoaDonID']; ?>&sp_id=<?php echo $row_mua['SanPhamID']; ?>&action=doi" class="btn btn-sm btn-outline-dark fw-bold rounded-pill px-3">
-                                                            Đổi
-                                                        </a>
-                                                        <a href="doitra_yeucau.php?hd_id=<?php echo $row_mua['HoaDonID']; ?>&sp_id=<?php echo $row_mua['SanPhamID']; ?>&action=tra" class="btn btn-sm btn-outline-danger fw-bold rounded-pill px-3">
-                                                            Trả
-                                                        </a>
-                                                    <?php else: ?>
+                                                    <?php if (!$daDuyet): ?>
+                                                        <!-- Chưa duyệt: chưa cho đổi/trả, đánh giá -->
+                                                        <span class="text-muted small fst-italic">Chờ xử lý...</span>
+                                                    <?php elseif (!$duocDoiTra): ?>
+                                                        <!-- Đang trả góp chưa tất toán -->
                                                         <span class="badge bg-light text-secondary border px-3 py-2 rounded-pill" title="Chưa tất toán trả góp">
                                                             <i class="bi bi-lock-fill"></i> Đang Trả Góp
                                                         </span>
+                                                    <?php elseif ($daDoiTra): ?>
+                                                        <!-- Đã đổi/trả: khóa nút -->
+                                                        <span class="badge bg-secondary text-white px-3 py-2 rounded-pill">
+                                                            <i class="bi bi-check2-circle"></i>
+                                                            <?php echo htmlspecialchars($loaiDoiTra); ?> xong
+                                                        </span>
+                                                    <?php else: ?>
+                                                        <!-- Chưa đổi/trả: hiện nút -->
+                                                        <a href="doitra_yeucau.php?hd_id=<?php echo $row_mua['HoaDonID']; ?>&sp_id=<?php echo $row_mua['SanPhamID']; ?>&action=doi" class="btn btn-sm btn-outline-dark fw-bold rounded-pill px-3">Đổi</a>
+                                                        <a href="doitra_yeucau.php?hd_id=<?php echo $row_mua['HoaDonID']; ?>&sp_id=<?php echo $row_mua['SanPhamID']; ?>&action=tra" class="btn btn-sm btn-outline-danger fw-bold rounded-pill px-3">Trả</a>
                                                     <?php endif; ?>
-                                                    <a href="danh_gia.php?sp_id=<?php echo $row_mua['SanPhamID']; ?>&hd_id=<?php echo $row_mua['HoaDonID']; ?>" class="btn btn-sm btn-dark fw-bold rounded-pill px-3 shadow-sm">
-                                                        <i class="bi bi-star-fill text-warning" style="font-size: 0.8rem;"></i> Đánh giá
-                                                    </a>
+
+                                                    <?php if ($daDanhGia): ?>
+                                                        <!-- Đã đánh giá: khóa nút -->
+                                                        <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
+                                                            <i class="bi bi-star-fill"></i> Đã đánh giá
+                                                        </span>
+                                                    <?php elseif ($daDuyet): ?>
+                                                        <!-- Đã duyệt, chưa đánh giá: hiện nút -->
+                                                        <a href="danh_gia.php?sp_id=<?php echo $row_mua['SanPhamID']; ?>&hd_id=<?php echo $row_mua['HoaDonID']; ?>" class="btn btn-sm btn-dark fw-bold rounded-pill px-3 shadow-sm">
+                                                            <i class="bi bi-star-fill text-warning" style="font-size: 0.8rem;"></i> Đánh giá
+                                                        </a>
+                                                    <?php endif; ?>
                                                 </div>
                                             </td>
                                         </tr>
@@ -351,7 +410,7 @@ switch ($loc_gia_noibat) {
                                 else:
                                     ?>
                                     <tr>
-                                        <td colspan="6" class="text-center text-muted py-5"><i class="bi bi-bag-x display-4 d-block mb-3 opacity-25"></i>Bạn chưa mua sản phẩm nào.</td>
+                                        <td colspan="7" class="text-center text-muted py-5"><i class="bi bi-bag-x display-4 d-block mb-3 opacity-25"></i>Bạn chưa mua sản phẩm nào.</td>
                                     </tr>
                                 <?php endif; ?>
                             </tbody>

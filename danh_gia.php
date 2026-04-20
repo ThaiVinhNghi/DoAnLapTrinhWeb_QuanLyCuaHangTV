@@ -109,12 +109,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['btnGuiDanhGia'])) {
         // Thông báo và tự động chuyển về trang Sản phẩm sau 2 giây
         $thongbao = "
             <div class='alert alert-success rounded-pill text-center shadow-sm mb-4'>
-                <i class='bi bi-check-circle-fill'></i> Cảm ơn bạn đã gửi đánh giá! Hệ thống đang chuyển hướng...
+                <i class='bi bi-check-circle-fill'></i> Cảm ơn bạn đã gửi đánh giá! Đang chuyển về lịch sử đơn hàng...
             </div>
             <script>
                 setTimeout(function(){
                     window.location.href = 'san_pham.php#san-pham-da-mua';
-                }, 2000);
+                }, 1500);
             </script>
         ";
         $stmt_insert->close();

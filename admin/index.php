@@ -11,9 +11,23 @@ $sql_doanhthu = "SELECT SUM(hc.SoLuongBan * hc.DonGiaBan) as TongDoanhThu
                  FROM hoadon_chitiet hc 
                  JOIN hoadon hd ON hc.HoaDonID = hd.ID 
                  WHERE MONTH(hd.NgayLap) = MONTH(CURRENT_DATE()) 
-                 AND YEAR(hd.NgayLap) = YEAR(CURRENT_DATE())";
+                 AND YEAR(hd.NgayLap) = YEAR(CURRENT_DATE())
+                 AND hd.NhanVienID IS NOT NULL";
 $res_dt = $conn->query($sql_doanhthu);
 $doanhThuThang = ($res_dt && $row = $res_dt->fetch_assoc()) ? (float)$row['TongDoanhThu'] : 0;
+
+// 1b. Trừ tiền hoàn trả: các phiếu TRẢ HÀNG đã hoàn tất trong tháng này
+//     (Đổi hàng không trừ vì giá trị SP tương đương, không mất doanh thu)
+$sql_hoan_tra = "SELECT COALESCE(SUM(dt.TongTienHoan), 0) as TongHoan
+                 FROM doitra dt
+                 WHERE dt.LoaiYeuCau = 'Trả hàng'
+                 AND dt.TrangThai = 'Đã hoàn tất'
+                 AND MONTH(dt.NgayXuLy) = MONTH(CURRENT_DATE())
+                 AND YEAR(dt.NgayXuLy) = YEAR(CURRENT_DATE())";
+$res_hoan = $conn->query($sql_hoan_tra);
+$tongTienHoanTra = ($res_hoan && $row_h = $res_hoan->fetch_assoc()) ? (float)$row_h['TongHoan'] : 0;
+
+$doanhThuThang = max(0, $doanhThuThang - $tongTienHoanTra);
 
 // 2. Tính Số Đơn Hàng Mới Trong Tháng
 $sql_donhang = "SELECT COUNT(ID) as SoDon FROM hoadon 

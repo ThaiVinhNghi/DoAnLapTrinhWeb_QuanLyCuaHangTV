@@ -123,6 +123,24 @@ while ($item = $chiTietResult->fetch_assoc()) {
     $tongTienDonHang += $item['ThanhTien'];
     $danhSachSanPham[] = $item;
 }
+
+// --- KIỂM TRA YÊU CẦU ĐỔI/TRẢ CỦA HÓA ĐƠN NÀY (nếu có) ---
+$thongTinDoiTra = null;
+$sql_dt = "SELECT dt.LoaiYeuCau, dt.TrangThai, sp_moi.TenSanPham as TenSPMoi
+           FROM doitra dt
+           LEFT JOIN sanpham sp_moi ON dt.SanPhamMoiID = sp_moi.ID
+           WHERE dt.HoaDonID = ?
+           LIMIT 1";
+$stmt_dt = $conn->prepare($sql_dt);
+if ($stmt_dt) {
+    $stmt_dt->bind_param("i", $id_hoadon);
+    $stmt_dt->execute();
+    $res_dt = $stmt_dt->get_result();
+    if ($res_dt && $res_dt->num_rows > 0) {
+        $thongTinDoiTra = $res_dt->fetch_assoc();
+    }
+    $stmt_dt->close();
+}
 ?>
 
 <!DOCTYPE html>
@@ -176,6 +194,27 @@ while ($item = $chiTietResult->fetch_assoc()) {
                             <span class="badge bg-warning text-dark">Chờ xử lý</span>
                         <?php endif; ?>
                     </p>
+                    <?php if ($thongTinDoiTra): ?>
+                        <div class="mt-2 pt-2 border-top">
+                            <strong class="small">Yêu cầu đổi/trả:</strong><br>
+                            <?php
+                            $loaiDT = $thongTinDoiTra['LoaiYeuCau'];
+                            $trangThaiDT = $thongTinDoiTra['TrangThai'];
+                            $tenSPMoiDT = $thongTinDoiTra['TenSPMoi'] ?? '';
+                            $badgeColor = ($loaiDT == 'Đổi hàng') ? 'warning text-dark' : 'danger';
+                            $badgeTT = ($trangThaiDT == 'Đã hoàn tất') ? 'success' : (($trangThaiDT == 'Từ chối') ? 'dark' : 'secondary');
+                            ?>
+                            <span class="badge bg-<?php echo $badgeColor; ?> me-1"><?php echo htmlspecialchars($loaiDT); ?></span>
+                            <span class="badge bg-<?php echo $badgeTT; ?>"><?php echo htmlspecialchars($trangThaiDT); ?></span>
+                            <?php if (!empty($tenSPMoiDT)): ?>
+                                <div class="mt-1">
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle fw-normal">
+                                        <i class="bi bi-arrow-repeat"></i> Đổi thành: <strong><?php echo htmlspecialchars($tenSPMoiDT); ?></strong>
+                                    </span>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

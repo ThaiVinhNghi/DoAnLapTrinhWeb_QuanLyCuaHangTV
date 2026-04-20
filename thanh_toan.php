@@ -88,12 +88,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // =========================
         // 1. THANH TOÁN HẾT
         // =========================
-        if ($hinhThucThanhToan === 'thanhtoanhet') {
+        if ($hinhThucThanhToan === 'thanhtoanhet' || $hinhThucThanhToan === 'chuyenkhoan') {
             $nhanVienID = null;
+            $ghiChuFull = $ghiChu;
+            if ($hinhThucThanhToan === 'chuyenkhoan') {
+                $ghiChuFull = '[Chuyển khoản] ' . $ghiChu;
+            }
 
             $sql_hoadon = "INSERT INTO hoadon (NhanVienID, KhachHangID, NgayLap, GhiChuHoaDon) VALUES (?, ?, ?, ?)";
             $stmt_hd = $conn->prepare($sql_hoadon);
-            $stmt_hd->bind_param("iiss", $nhanVienID, $khachHangID, $ngayLap, $ghiChu);
+            $stmt_hd->bind_param("iiss", $nhanVienID, $khachHangID, $ngayLap, $ghiChuFull);
             $stmt_hd->execute();
 
             $id_hoadon = $conn->insert_id;
@@ -145,7 +149,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 'DatHang',
                 'hoadon',
                 $id_hoadon,
-                'Khách hàng đặt hàng thanh toán hết, mã hóa đơn #HD' . $id_hoadon,
+                'Khách hàng đặt hàng ' . ($hinhThucThanhToan === 'chuyenkhoan' ? 'chuyển khoản' : 'thanh toán hết') . ', mã hóa đơn #HD' . $id_hoadon,
                 'ThanhCong'
             );
 
@@ -352,9 +356,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         <?php if ($datHangThanhCong): ?>
             <div class="text-center mt-4">
-                <a href="trang_chu.php" class="btn btn-primary me-2 px-4 py-2 fw-bold">Tiếp tục mua sắm</a>
-                <a href="logout_khach.php" class="btn btn-danger px-4 py-2 fw-bold">Đăng xuất</a>
+                <p class="text-muted">Chuyển về đơn hàng của bạn trong 3 giây...</p>
+                <a href="san_pham.php#san-pham-da-mua" class="btn btn-primary me-2 px-4 py-2 fw-bold">Xem đơn hàng ngay</a>
+                <a href="trang_chu.php" class="btn btn-outline-secondary px-4 py-2 fw-bold">Tiếp tục mua sắm</a>
             </div>
+            <script>
+                setTimeout(function(){
+                    window.location.href = 'san_pham.php#san-pham-da-mua';
+                }, 3000);
+            </script>
         <?php endif; ?>
     <?php endif; ?>
 
@@ -373,21 +383,50 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                 <label class="form-label fw-bold">Hình thức thanh toán</label>
 
                                 <div class="form-check mb-2">
-                                    <input class="form-check-input" type="radio" name="HinhThucThanhToan" id="thanhtoanhet" value="thanhtoanhet" checked onclick="toggleTraGopBox()">
+                                    <input class="form-check-input" type="radio" name="HinhThucThanhToan" id="thanhtoanhet" value="thanhtoanhet" checked onclick="togglePaymentBox()">
                                     <label class="form-check-label" for="thanhtoanhet">
-                                        Thanh toán hết (Tiền mặt / Chuyển khoản)
+                                        <i class="bi bi-cash-coin text-success me-1"></i> Thanh toán tiền mặt (khi nhận hàng)
                                     </label>
                                 </div>
 
                                 <div class="form-check mb-2">
-                                    <input class="form-check-input" type="radio" name="HinhThucThanhToan" id="tragop" value="tragop" onclick="toggleTraGopBox()" <?php echo $isNoXau ? 'disabled' : ''; ?>>
+                                    <input class="form-check-input" type="radio" name="HinhThucThanhToan" id="chuyenkhoan" value="chuyenkhoan" onclick="togglePaymentBox()">
+                                    <label class="form-check-label" for="chuyenkhoan">
+                                        <i class="bi bi-qr-code text-primary me-1"></i> Chuyển khoản ngân hàng (QR)
+                                    </label>
+                                </div>
+
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" name="HinhThucThanhToan" id="tragop" value="tragop" onclick="togglePaymentBox()" <?php echo $isNoXau ? 'disabled' : ''; ?>>
                                     <label class="form-check-label <?php echo $isNoXau ? 'text-muted' : ''; ?>" for="tragop">
-                                        Mua trả góp
+                                        <i class="bi bi-calendar-check me-1"></i> Mua trả góp
                                         <?php if ($isNoXau): ?>
                                             <span class="badge bg-danger ms-2"><i class="bi bi-lock-fill"></i> Bị khóa do có nợ xấu</span>
                                             <div class="small text-danger mt-1 fw-normal" style="font-size: 0.85rem;">Bạn cần thanh toán dứt điểm các hồ sơ nợ xấu trước khi sử dụng lại tính năng này.</div>
                                         <?php endif; ?>
                                     </label>
+                                </div>
+                            </div>
+
+                            <!-- Hộp hiển thị QR chuyển khoản -->
+                            <div id="boxChuyenKhoan" style="display:none;">
+                                <div class="border rounded-3 p-3 mb-3 text-center" style="background: linear-gradient(135deg, #f0f7ff, #e8f4fd); border-color: #bbd8f5 !important;">
+                                    <div class="mb-2">
+                                        <i class="bi bi-qr-code-scan text-primary" style="font-size: 2rem;"></i>
+                                        <h6 class="fw-bold text-primary mt-1 mb-0">Quét mã QR để thanh toán</h6>
+                                    </div>
+                                    <img src="uploads/qr_chuyen_khoan.jpg" alt="Mã QR Chuyển Khoản" 
+                                         class="rounded-2 shadow-sm" 
+                                         style="max-width: 220px; width: 100%; border: 3px solid #1a73e8;"
+                                         onerror="this.style.display='none'; document.getElementById('qr-fallback').style.display='block';">
+                                    <div id="qr-fallback" style="display:none;" class="p-3 text-muted">
+                                        <i class="bi bi-image text-secondary" style="font-size:3rem;"></i>
+                                        <p class="small mt-2">(Ảnh QR sẽ hiển thị sau khi upload)</p>
+                                    </div>
+                                    <p class="small text-muted mt-2 mb-0">
+                                        <i class="bi bi-info-circle"></i> Sử dụng ứng dụng ngân hàng của bạn để quét mã QR này.
+                                        <br>Điền nội dung chuyển khoản: <strong>HD + Tên của bạn</strong>
+                                    </p>
                                 </div>
                             </div>
 
@@ -531,22 +570,32 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 // ===== JAVASCRIPT TÍNH TOÁN & VALIDATION =====
 const TONG_TIEN_GIO_HANG = <?php echo $tongTienGioHang; ?>;
 
-// 1. Tắt/Bật vùng Trả góp
-function toggleTraGopBox() {
+// 1. Tắt/Bật vùng Trả góp / Chuyển khoản
+function togglePaymentBox() {
     const tragop = document.getElementById('tragop');
+    const chuyenkhoan = document.getElementById('chuyenkhoan');
     const boxTraGop = document.getElementById('boxTraGop');
+    const boxChuyenKhoan = document.getElementById('boxChuyenKhoan');
+    const btnDatHang = document.getElementById('btnDatHang');
     
-    if (tragop.checked) {
-        boxTraGop.style.display = 'block';
+    // Ẩn tất cả trước
+    if (boxTraGop) boxTraGop.style.display = 'none';
+    if (boxChuyenKhoan) boxChuyenKhoan.style.display = 'none';
+    
+    if (tragop && tragop.checked) {
+        if (boxTraGop) boxTraGop.style.display = 'block';
         calculateInstallment();
-        kiemTraTuoiHopLe(); // Chạy lại kiểm tra khi bật trả góp lên
+        kiemTraTuoiHopLe();
+    } else if (chuyenkhoan && chuyenkhoan.checked) {
+        if (boxChuyenKhoan) boxChuyenKhoan.style.display = 'block';
+        if (btnDatHang) btnDatHang.disabled = false;
     } else {
-        boxTraGop.style.display = 'none';
-        document.getElementById('resultBox').style.display = 'none';
-        
-        // Nếu chọn thanh toán hết thì mở khóa nút đặt hàng luôn
-        const btnDatHang = document.getElementById('btnDatHang');
-        if(btnDatHang) btnDatHang.disabled = false;
+        // Tiền mặt
+        if (boxTraGop) {
+            const resultBox = document.getElementById('resultBox');
+            if (resultBox) resultBox.style.display = 'none';
+        }
+        if (btnDatHang) btnDatHang.disabled = false;
     }
 }
 
@@ -643,10 +692,7 @@ function validateThanhToan() {
 
 // Chạy hàm kiểm tra ngay khi load lại trang
 document.addEventListener('DOMContentLoaded', function() {
-    const tragop = document.getElementById('tragop');
-    if (tragop && tragop.checked) {
-        toggleTraGopBox();
-    }
+    togglePaymentBox(); // Đảm bảo trạng thái ban đầu đúng
 });
 </script>
 </body>
