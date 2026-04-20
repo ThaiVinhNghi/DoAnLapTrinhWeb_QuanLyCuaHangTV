@@ -125,18 +125,43 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['duyet_yeucau'])) {
                 $ghiChuNhatKy = "Duyệt ĐỔI HÀNG #DT{$id_doitra}. Đã thu hồi SP cũ và xuất SP mới (ID: {$sp_moi_id}) giao cho khách.";
             }
 
-            // Bước 3.3: Cập nhật trạng thái phiếu đổi trả
+            // Bước 3.3: Xử lý cập nhật Phiếu Bảo Hành (Hủy của máy cũ, Sinh cho máy mới)
+            foreach ($danhSachChiTiet as $ct) {
+                $sp_cu_id = $ct['SanPhamID'];
+                
+                // Hủy phiếu bảo hành của sản phẩm cũ đã mua
+                $sql_huy_bh = "UPDATE baohanh SET TrangThai = 'Đã hủy (Đổi/Trả)' WHERE HoaDonID = ? AND SanPhamID = ?";
+                $stmt_huy = $conn->prepare($sql_huy_bh);
+                $stmt_huy->bind_param("ii", $phieu['HoaDonID'], $sp_cu_id);
+                $stmt_huy->execute();
+
+                // Tạo phiếu bảo hành cho sản phẩm mới (chỉ tạo khi là Đổi Hàng)
+                if ($phieu['LoaiYeuCau'] == 'Đổi hàng' && isset($sp_moi_id) && $sp_moi_id > 0) {
+                    for ($i = 0; $i < $ct['SoLuong']; $i++) {
+                        $ngayKichHoat = date('Y-m-d');
+                        $ngayHetHan = date('Y-m-d', strtotime('+24 months'));
+                        $soSerial = 'BH-DOITRA-' . $id_doitra . '-' . $sp_moi_id . '-' . ($i+1) . '-' . strtoupper(substr(md5(uniqid()), 0, 5));
+                        
+                        $sql_insert_bh = "INSERT INTO baohanh (HoaDonID, SanPhamID, SoSerial, NgayKichHoat, NgayHetHan, TrangThai) VALUES (?, ?, ?, ?, ?, 'Đang bảo hành')";
+                        $stmt_insert_bh = $conn->prepare($sql_insert_bh);
+                        $stmt_insert_bh->bind_param("iisss", $phieu['HoaDonID'], $sp_moi_id, $soSerial, $ngayKichHoat, $ngayHetHan);
+                        $stmt_insert_bh->execute();
+                    }
+                }
+            }
+
+            // Bước 3.4: Cập nhật trạng thái phiếu đổi trả
             $sql_update_phieu = "UPDATE doitra SET NhanVienID = ?, NgayXuLy = ?, TrangThai = ? WHERE ID = ?";
             $stmt_update = $conn->prepare($sql_update_phieu);
             $stmt_update->bind_param("issi", $admin_id, $ngayXuLy, $trangThaiMoi, $id_doitra);
             $stmt_update->execute();
 
-            // Bước 3.4: Ghi nhật ký
+            // Bước 3.5: Ghi nhật ký
             ghiNhatKyTuSession($conn, 'DuyetDoiTra', 'doitra', $id_doitra, $ghiChuNhatKy);
 
             $conn->commit();
             
-            echo "<script>alert('Đã xử lý và cập nhật kho hàng thành công!'); window.location.href='doi_tra.php';</script>";
+            echo "<script>alert('Đã xử lý: Cập nhật kho hàng và phiếu bảo hành thành công!'); window.location.href='doi_tra.php';</script>";
             exit();
 
         } catch (Exception $e) {
@@ -261,11 +286,11 @@ require_once 'sidebar.php';
 
                             <?php if ($phieu['LoaiYeuCau'] == 'Đổi hàng'): ?>
                                 <div class="alert alert-warning text-dark">
-                                    <label class="form-label fw-bold"><i class="bi bi-search"></i> Chọn sản phẩm MỚI giao cho khách:</label>
+                                    <label class="form-label fw-bold"><i class="bi bi-search"></i> Kiểm tra sản phẩm MỚI khách đã chọn (có thể thay đổi nếu cần):</label>
                                     <select name="san_pham_moi" class="form-select border-dark" required>
                                         <option value="">-- Click để chọn Tivi trong kho --</option>
                                         <?php foreach($dsSanPhamMoi as $sp_moi): ?>
-                                            <option value="<?php echo $sp_moi['ID']; ?>">
+                                            <option value="<?php echo $sp_moi['ID']; ?>" <?php echo ($sp_moi['ID'] == $phieu['SanPhamMoiID']) ? 'selected' : ''; ?>>
                                                 <?php echo $sp_moi['TenSanPham']; ?> (Kho: <?php echo $sp_moi['SoLuong']; ?>) - <?php echo number_format($sp_moi['DonGia'], 0, ',', '.'); ?>đ
                                             </option>
                                         <?php endforeach; ?>

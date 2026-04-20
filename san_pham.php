@@ -304,20 +304,35 @@ switch ($loc_gia_noibat) {
                             <tbody class="border-top-0">
                                 <?php
                                 $kh_id = (int) $_SESSION['khach_hang_id'];
-                                // Lấy danh sách đơn hàng kèm thông tin đổi/trả và SP mới (nếu đã đổi)
-                                $sql_damua = "SELECT sp.TenSanPham, sp.HinhAnh, hd.ID as HoaDonID, hd.NgayLap, hd.NhanVienID,
-                                    hdct.SoLuongBan, sp.ID as SanPhamID,
-                                    tg.ID as TraGopID, tg.TinhTrangTra,
-                                    dt.ID as DoiTraID, dt.LoaiYeuCau,
-                                    sp_moi.TenSanPham as TenSPMoi
-                                FROM hoadon hd
-                                JOIN hoadon_chitiet hdct ON hd.ID = hdct.HoaDonID
-                                JOIN sanpham sp ON hdct.SanPhamID = sp.ID
-                                LEFT JOIN tragop tg ON hd.ID = tg.HoaDonID
-                                LEFT JOIN doitra dt ON hd.ID = dt.HoaDonID AND dt.KhachHangID = $kh_id
-                                LEFT JOIN sanpham sp_moi ON dt.SanPhamMoiID = sp_moi.ID
-                                WHERE hd.KhachHangID = $kh_id
-                                ORDER BY hd.ID DESC";
+                                // Lấy danh sách đơn hàng (Đã xuất hóa đơn) VÀ Các hồ sơ trả góp đang CHỜ DUYỆT (chưa có hóa đơn)
+                                $sql_damua = "
+                                    SELECT sp.TenSanPham, sp.HinhAnh, hd.ID as HoaDonID, hd.NgayLap, hd.NhanVienID,
+                                           hdct.SoLuongBan, sp.ID as SanPhamID,
+                                           tg.ID as TraGopID, tg.TinhTrangTra,
+                                           dt.ID as DoiTraID, dt.LoaiYeuCau, dt.TrangThai as TrangThaiDoiTra,
+                                           sp_moi.TenSanPham as TenSPMoi
+                                    FROM hoadon hd
+                                    JOIN hoadon_chitiet hdct ON hd.ID = hdct.HoaDonID
+                                    JOIN sanpham sp ON hdct.SanPhamID = sp.ID
+                                    LEFT JOIN tragop tg ON hd.ID = tg.HoaDonID
+                                    LEFT JOIN doitra dt ON hd.ID = dt.HoaDonID AND dt.KhachHangID = $kh_id
+                                    LEFT JOIN sanpham sp_moi ON dt.SanPhamMoiID = sp_moi.ID
+                                    WHERE hd.KhachHangID = $kh_id
+
+                                    UNION ALL
+                                    
+                                    SELECT sp.TenSanPham, sp.HinhAnh, NULL as HoaDonID, tg.NgayDangKy as NgayLap, NULL as NhanVienID,
+                                           tgct.SoLuong as SoLuongBan, sp.ID as SanPhamID,
+                                           tg.ID as TraGopID, tg.TinhTrangTra,
+                                           NULL as DoiTraID, NULL as LoaiYeuCau, NULL as TrangThaiDoiTra,
+                                           NULL as TenSPMoi
+                                    FROM tragop tg
+                                    JOIN tragop_chitiet tgct ON tg.ID = tgct.TraGopID
+                                    JOIN sanpham sp ON tgct.SanPhamID = sp.ID
+                                    WHERE tg.KhachHangID = $kh_id AND tg.TrangThai = 'Chờ duyệt'
+
+                                    ORDER BY NgayLap DESC
+                                ";
                                 $result_damua = $conn->query($sql_damua);
 
                                 if ($result_damua && $result_damua->num_rows > 0):
@@ -328,13 +343,17 @@ switch ($loc_gia_noibat) {
                                         $daDuyet = !empty($row_mua['NhanVienID']);
                                         
                                         // Kiểm tra đã đánh giá chưa
-                                        $sql_ck_dg = "SELECT ID FROM DanhGia WHERE HoaDonID = {$row_mua['HoaDonID']} AND SanPhamID = {$row_mua['SanPhamID']} AND KhachHangID = $kh_id LIMIT 1";
-                                        $res_ck_dg = $conn->query($sql_ck_dg);
-                                        $daDanhGia = ($res_ck_dg && $res_ck_dg->num_rows > 0);
+                                        $daDanhGia = false;
+                                        if (!empty($row_mua['HoaDonID'])) {
+                                            $sql_ck_dg = "SELECT ID FROM DanhGia WHERE HoaDonID = " . (int)$row_mua['HoaDonID'] . " AND SanPhamID = " . (int)$row_mua['SanPhamID'] . " AND KhachHangID = $kh_id LIMIT 1";
+                                            $res_ck_dg = $conn->query($sql_ck_dg);
+                                            $daDanhGia = ($res_ck_dg && $res_ck_dg->num_rows > 0);
+                                        }
                                         
-                                        // Kiểm tra đã đổi/trả chưa
+                                        // Kiểm tra đã đổi/trả chưa và lấy trạng thái
                                         $daDoiTra = !empty($row_mua['DoiTraID']);
                                         $loaiDoiTra = $row_mua['LoaiYeuCau'] ?? '';
+                                        $trangThaiDoiTra = $row_mua['TrangThaiDoiTra'] ?? ''; // Lấy trạng thái từ bảng doitra
                                         $tenSPMoi = $row_mua['TenSPMoi'] ?? '';
                                         
                                         // Kiểm tra trả góp
@@ -349,13 +368,25 @@ switch ($loc_gia_noibat) {
                                                 <?php echo htmlspecialchars($row_mua['TenSanPham']); ?>
                                                 <?php if (!empty($tenSPMoi)): ?>
                                                     <div class="mt-1">
-                                                        <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size:0.75rem;">
-                                                            <i class="bi bi-arrow-repeat"></i> Đổi thành: <?php echo htmlspecialchars($tenSPMoi); ?>
-                                                        </span>
+                                                        <?php if ($trangThaiDoiTra == 'Chờ xử lý'): ?>
+                                                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle" style="font-size:0.75rem;" title="Đang đợi admin duyệt">
+                                                                <i class="bi bi-arrow-repeat"></i> Xin đổi sang: <?php echo htmlspecialchars($tenSPMoi); ?>
+                                                            </span>
+                                                        <?php elseif ($trangThaiDoiTra == 'Đã hoàn tất'): ?>
+                                                            <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size:0.75rem;">
+                                                                <i class="bi bi-check2-circle"></i> Đã đổi thành: <?php echo htmlspecialchars($tenSPMoi); ?>
+                                                            </span>
+                                                        <?php elseif ($trangThaiDoiTra == 'Từ chối'): ?>
+                                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle text-decoration-line-through" style="font-size:0.75rem;" title="Đổi hàng bị từ chối">
+                                                                <i class="bi bi-x"></i> Xin đổi sang: <?php echo htmlspecialchars($tenSPMoi); ?>
+                                                            </span>
+                                                        <?php endif; ?>
                                                     </div>
                                                 <?php endif; ?>
                                             </td>
-                                            <td class="text-secondary fw-bold py-3">#<?php echo $row_mua['HoaDonID']; ?></td>
+                                            <td class="text-secondary fw-bold py-3">
+                                                <?php echo !empty($row_mua['HoaDonID']) ? '#' . $row_mua['HoaDonID'] : '<span class="badge bg-secondary text-white shadow-sm border border-secondary" title="Mã trả góp">#TG' . $row_mua['TraGopID'] . '</span>'; ?>
+                                            </td>
                                             <td class="text-secondary py-3"><?php echo date('d/m/Y', strtotime($row_mua['NgayLap'])); ?></td>
                                             <td class="fw-bold text-secondary py-3"><?php echo (int) $row_mua['SoLuongBan']; ?></td>
                                             <td class="py-3">
@@ -363,6 +394,25 @@ switch ($loc_gia_noibat) {
                                                     <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1 rounded-pill" style="font-size:0.75rem;">
                                                         <i class="bi bi-hourglass-split"></i> Chờ xét duyệt
                                                     </span>
+                                                <?php elseif ($daDoiTra): ?>
+                                                    <!-- Trạng thái sản phẩm Đã mua nhưng bị đem Đổi / Trả -->
+                                                    <?php if ($trangThaiDoiTra == 'Chờ xử lý'): ?>
+                                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1 rounded-pill" style="font-size:0.75rem;" title="Admin chưa duyệt">
+                                                            <i class="bi bi-arrow-repeat"></i> Chờ duyệt <?php echo mb_strtolower($loaiDoiTra, 'UTF-8'); ?>
+                                                        </span>
+                                                    <?php elseif ($trangThaiDoiTra == 'Đã hoàn tất'): ?>
+                                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill" style="font-size:0.75rem;">
+                                                            <i class="bi bi-check-circle-fill"></i> Đã duyệt <?php echo mb_strtolower($loaiDoiTra, 'UTF-8'); ?>
+                                                        </span>
+                                                    <?php elseif ($trangThaiDoiTra == 'Từ chối'): ?>
+                                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 rounded-pill" style="font-size:0.75rem;">
+                                                            <i class="bi bi-x-circle-fill"></i> Từ chối <?php echo mb_strtolower($loaiDoiTra, 'UTF-8'); ?>
+                                                        </span>
+                                                    <?php else: ?>
+                                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1 rounded-pill" style="font-size:0.75rem;">
+                                                            Đang xử lý
+                                                        </span>
+                                                    <?php endif; ?>
                                                 <?php else: ?>
                                                     <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill" style="font-size:0.75rem;">
                                                         <i class="bi bi-check-circle-fill"></i> Đã duyệt
@@ -373,17 +423,16 @@ switch ($loc_gia_noibat) {
                                                 <div class="d-flex flex-wrap gap-2 justify-content-center align-items-center">
                                                     <?php if (!$daDuyet): ?>
                                                         <!-- Chưa duyệt: chưa cho đổi/trả, đánh giá -->
-                                                        <span class="text-muted small fst-italic">Chờ xử lý...</span>
+                                                        <span class="text-muted small fst-italic">Chờ xử lý hóa đơn...</span>
                                                     <?php elseif (!$duocDoiTra): ?>
                                                         <!-- Đang trả góp chưa tất toán -->
                                                         <span class="badge bg-light text-secondary border px-3 py-2 rounded-pill" title="Chưa tất toán trả góp">
                                                             <i class="bi bi-lock-fill"></i> Đang Trả Góp
                                                         </span>
                                                     <?php elseif ($daDoiTra): ?>
-                                                        <!-- Đã đổi/trả: khóa nút -->
-                                                        <span class="badge bg-secondary text-white px-3 py-2 rounded-pill">
-                                                            <i class="bi bi-check2-circle"></i>
-                                                            <?php echo htmlspecialchars($loaiDoiTra); ?> xong
+                                                        <!-- Tùy chọn vô hiệu hóa vì Đã có yêu cầu đổi/trả -->
+                                                        <span class="badge bg-light text-secondary px-3 py-2 border rounded-pill shadow-sm">
+                                                            <i class="bi bi-info-circle"></i> Đã yêu cầu <?php echo mb_strtolower($loaiDoiTra, 'UTF-8'); ?>
                                                         </span>
                                                     <?php else: ?>
                                                         <!-- Chưa đổi/trả: hiện nút -->

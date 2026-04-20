@@ -93,13 +93,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['gui_yeu_cau'])) {
         try {
             $tongTienHoan = ($action == 'doi') ? 0 : $soLuongDoiTra * $sanPham['DonGiaBan'];
 
-            // Chèn vào doitra
+            // --- LOGIC YÊU CẦU ĐỔI / TRẢ HÀNG ---
+            // Yêu cầu "Trả hàng" cần được thêm vào hàng đợi trạng thái "Chờ xử lý", sau đó Admin sẽ duyệt qua file admin/doi_tra.php
             if ($action == 'doi' && $spMoiID > 0) {
-                $sql_insert_dt = "INSERT INTO doitra (HoaDonID, KhachHangID, LoaiYeuCau, LyDo, TongTienHoan, SanPhamMoiID) VALUES (?, ?, ?, ?, ?, ?)";
+                // Xử lý Gửi yêu cầu Đổi Hàng sang sản phẩm khác id = $spMoiID
+                $sql_insert_dt = "INSERT INTO doitra (HoaDonID, KhachHangID, LoaiYeuCau, LyDo, TongTienHoan, SanPhamMoiID, TrangThai) VALUES (?, ?, ?, ?, ?, ?, 'Chờ xử lý')";
                 $stmt_dt = $conn->prepare($sql_insert_dt);
                 $stmt_dt->bind_param("iissdi", $hd_id, $khachHangID, $loaiYeuCau, $lyDo, $tongTienHoan, $spMoiID);
             } else {
-                $sql_insert_dt = "INSERT INTO doitra (HoaDonID, KhachHangID, LoaiYeuCau, LyDo, TongTienHoan) VALUES (?, ?, ?, ?, ?)";
+                // Xử lý Gửi yêu cầu Trả Hàng
+                // (Được ưu tiên sửa trước theo yêu cầu, tạo ra phiếu với trạng thái "Chờ xử lý" thay vì hoàn tất ngay)
+                $sql_insert_dt = "INSERT INTO doitra (HoaDonID, KhachHangID, LoaiYeuCau, LyDo, TongTienHoan, TrangThai) VALUES (?, ?, ?, ?, ?, 'Chờ xử lý')";
                 $stmt_dt = $conn->prepare($sql_insert_dt);
                 $stmt_dt->bind_param("iissd", $hd_id, $khachHangID, $loaiYeuCau, $lyDo, $tongTienHoan);
             }
